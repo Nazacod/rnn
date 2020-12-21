@@ -88,9 +88,11 @@ class LSTMLayer(nn.Module):
         self.hidden_size = hidden_size
         self.batch_size = batch_size
         self.numHiddenUnits = numHiddenUnits
-        # self.hid = torch.zeros(batch_size, self.hidden_size)
-        # self.hid_c = torch.zeros(batch_size, self.hidden_size)
-        # self.cnt = 0
+        self.hid = torch.zeros(batch_size, self.hidden_size)
+        self.hid = self.hid.to(device)
+        self.hid_c = torch.zeros(batch_size, self.hidden_size)
+        self.hid_c = self.hid_c.to(device)
+        self.cnt = 0
         self.ListOfCells = {}
         for i in range(self.numHiddenUnits):
             self.ListOfCells[str(i)] = LSTMCell(input_size, hidden_size, batch_size, device)
@@ -103,23 +105,23 @@ class LSTMLayer(nn.Module):
         # batch_x.shape = (seq_len, batch_size, emb_size)
         # print("LSTMLayer")
         # print(self.ListOfCells.device)
-        # if batch_x.dim == 3:
-        for timestep in range(batch_x.shape[0]):
-            result = self.ListOfCells[str(timestep)](batch_x[timestep], h, c)
-            h = result[0]
-            c = result[1]
+        if batch_x.dim == 3:
+            for timestep in range(batch_x.shape[0]):
+                result = self.ListOfCells[str(timestep)](batch_x[timestep], h, c)
+                h = result[0]
+                c = result[1]
+                outputs.append(h)
+        else:
+            result = self.ListOfCells[str(self.cnt)](batch_x, self.hid, self.hid_c)
+            self.cnt += 1
+            params = get_small_config()
+            if self.cnt == params['num_steps'] - 1:
+                self.cnt = 0
+            self.hid = result[0]
+            self.hid_c = result[1]
             outputs.append(h)
-        # else:
-        #     result = self.ListOfCells[str(self.cnt)](batch_x, self.hid, self.hid_c)
-        #     self.cnt += 1
-        #     params = get_small_config()
-        #     if self.cnt == params['num_steps'] - 1:
-        #         self.cnt = 0
-        #     self.hid = result[0]
-        #     self.hid_c = result[1]
-        #     outputs.append(h)
-        #     h = self.hid
-        #     c = self.hid_c
+            h = self.hid
+            c = self.hid_c
 
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
         return torch.stack(outputs), h, c
