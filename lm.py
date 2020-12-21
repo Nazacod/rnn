@@ -204,7 +204,7 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
         initial_state = initial_state.to(device)
         initial_state_c = initial_state_c.to(device)
 
-        logits, _ = model(X, initial_state, initial_state_c, device)
+        logits, _ = model(X, initial_state, initial_state_c)
 
         loss = loss_fn(logits.view((-1, model.vocab_size)), Y.view(-1))
         total_examples += loss.size(0)
