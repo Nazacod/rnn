@@ -88,6 +88,9 @@ class LSTMLayer(nn.Module):
         self.hidden_size = hidden_size
         self.batch_size = batch_size
         self.numHiddenUnits = numHiddenUnits
+        self.hid = torch.zeros(batch_size, self.hidden_size)
+        self.hid_c = torch.zeros(batch_size, self.hidden_size)
+        self.cnt = 0
         self.ListOfCells = {}
         for i in range(self.numHiddenUnits):
             self.ListOfCells[str(i)] = LSTMCell(input_size, hidden_size, batch_size, device)
@@ -100,11 +103,24 @@ class LSTMLayer(nn.Module):
         # batch_x.shape = (seq_len, batch_size, emb_size)
         # print("LSTMLayer")
         # print(self.ListOfCells.device)
-        for timestep in range(batch_x.shape[0]):
-            result = self.ListOfCells[str(timestep)](batch_x[timestep], h, c)
-            h = result[0]
-            c = result[1]
+        if batch_x.dim == 3:
+            for timestep in range(batch_x.shape[0]):
+                result = self.ListOfCells[str(timestep)](batch_x[timestep], h, c)
+                h = result[0]
+                c = result[1]
+                outputs.append(h)
+        else:
+            result = self.ListOfCells[str(self.cnt)](batch_x, self.hid, self.hid_c)
+            self.cnt += 1
+            params = get_small_config()
+            if self.cnt == params['num_steps'] - 1:
+                self.cnt = 0
+            self.hid = result[0]
+            self.hid_c = result[1]
             outputs.append(h)
+            h = self.hid
+            c = self.hid_c
+
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
         return torch.stack(outputs), h, c
 
@@ -249,37 +265,37 @@ def train(token_list, word_to_id, id_to_word):
     :param token_list: a list of token ids
     :return: learnt parameters, or any object you like (it will be passed to the next_proba_gen function)
     """
-    # config = get_small_config()
-    # print(len(token_list))
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    # model = PTBLM(config["emb_size"], config["hidden_size"],
-    #               config["vocab_size"], config["num_steps"],
-    #               config["batch_size"], config['num_layers'], device)
-    # # print(device)
-    # model.to(device)
-    # loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
-    # optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
-    # # model
-    # plot_data = []
-    # for i in range(config['max_max_epoch']):
-    #     lr_decay = config['lr_decay'] ** max(i + 1 - config['max_epoch'], 0.0)
-    #     decayed_lr = config['lr'] * lr_decay
-    #
-    #     model.train()
-    #     train_perplexity = run_epoch(decayed_lr, model, token_list,
-    #                                  word_to_id, loss_fn,
-    #                                  optimizer=optimizer,
-    #                                  device=device,
-    #                                  batch_size=config["batch_size"],
-    #                                  num_steps=config["num_steps"])
-    #
-    #     plot_data.append((i, train_perplexity, decayed_lr))
-    #     print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
-    #           f'Train Perplexity: {train_perplexity:.3f}. ')
-    # epochs, ppl_train, lr = zip(*plot_data)
-    # plt.plot(epochs, ppl_train, 'g', label='Perplexity')
-    # plt.savefig('lr.png', dpi=1000, format='png')
-    # return model
+    config = get_small_config()
+    print(len(token_list))
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = PTBLM(config["emb_size"], config["hidden_size"],
+                  config["vocab_size"], config["num_steps"],
+                  config["batch_size"], config['num_layers'], device)
+    # print(device)
+    model.to(device)
+    loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
+    optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
+    # model
+    plot_data = []
+    for i in range(config['max_max_epoch']):
+        lr_decay = config['lr_decay'] ** max(i + 1 - config['max_epoch'], 0.0)
+        decayed_lr = config['lr'] * lr_decay
+
+        model.train()
+        train_perplexity = run_epoch(decayed_lr, model, token_list,
+                                     word_to_id, loss_fn,
+                                     optimizer=optimizer,
+                                     device=device,
+                                     batch_size=config["batch_size"],
+                                     num_steps=config["num_steps"])
+
+        plot_data.append((i, train_perplexity, decayed_lr))
+        print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
+              f'Train Perplexity: {train_perplexity:.3f}. ')
+    epochs, ppl_train, lr = zip(*plot_data)
+    plt.plot(epochs, ppl_train, 'g', label='Perplexity')
+    plt.savefig('lr.png', dpi=1000, format='png')
+    return model
 
 
     ############################# REPLACE THIS WITH YOUR CODE #############################
@@ -307,48 +323,25 @@ def next_proba_gen(token_gen, params, hidden_state=None):
      For sampling from language model it will be used as the initial state for the following tokens.
     """
 
-    # config = get_small_config()
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    # for X in token_gen:
-    #     print(type(X))
-    #     print(X.shape)
-    #     X = torch.tensor(X)
-    #     X = X.to(device)
-    #
-    #     params.eval()
-    #     init = params.init_hidden(config['batch_size'])
-    #     if hidden_state is None:
-    #         initial_state = init[0]
-    #     else:
-    #         initial_state = hidden_state
-    #     initial_state_c = init[1]
-    #     initial_state = initial_state.to(device)
-    #     initial_state_c = initial_state_c.to(device)
-    #     with torch.no_grad():
-    #         probs, hidden_state = params(X, initial_state, initial_state_c)
-    #
-    #     yield probs, hidden_state
-    # ############################# REPLACE THIS WITH YOUR CODE #############################
-    #
-    # # This is interpolation between Unigram and Bigram language models
-    vocab_size, counters = params
-    lambda1, lambda2 = 0.2, 0.8
-    unigram_probs = normalize(np.array([counters[0][(i,)] for i in range(vocab_size)]))
-    bigrams = list(counters[1].keys())
-    ii, jj = zip(*bigrams)
-    ii, jj = list(ii), list(jj)
-    data = [counters[1][p] for p in bigrams]
-    m = csr_matrix((data, (ii, jj)), shape=(vocab_size, vocab_size))
-    m /= m.sum(axis=1).reshape(vocab_size, 1)
-    # print(m.sum(axis=1))
+    config = get_small_config()
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    #X.shape(batch_size, )
+    for X in token_gen:
+        # print(type(X))
+        # print(X.shape)
+        X = torch.tensor(X)
+        X = X.to(device)
+        params.eval()
+        init = params.init_hidden(config['batch_size'])
+        if hidden_state is None:
+            initial_state = init[0]
+        else:
+            initial_state = hidden_state
+        initial_state_c = init[1]
+        initial_state = initial_state.to(device)
+        initial_state_c = initial_state_c.to(device)
+        with torch.no_grad():
+            probs, hidden_state = params(X, initial_state, initial_state_c)
 
-    for token_arr in token_gen:
-        probs = np.vstack(
-            [unigram_probs * lambda1 + np.asarray(m[token, :]).reshape(-1) * lambda2 for token in token_arr])
-        assert (np.abs(np.sum(probs, axis=-1) - 1) < 1e-5).all()
-        assert probs.shape[1] == vocab_size
-        print('AAAAAAAAAAAAAAAAAAAAAAAAAAAA')
-        print(probs.shape)
         yield probs, hidden_state
 
-    ############################# REPLACE THIS WITH YOUR CODE #############################
