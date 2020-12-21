@@ -110,24 +110,24 @@ class LSTM(nn.Module):
         self.hidden_size = hidden_size
         self.batch_size = batch_size
         self.num_layers = num_layers
-        # self.firstLayer = LSTMLayer(numHiddenUnits, input_size, hidden_size, batch_size)
-        # self.secondLayer = LSTMLayer(numHiddenUnits, hidden_size, hidden_size, batch_size)
-        self.ListOfLayers = []
-        for i in range(num_layers):
-            if i == 0:
-                self.ListOfLayers.append(LSTMLayer(numHiddenUnits, input_size, hidden_size, batch_size))
-            else:
-                self.ListOfLayers.append(LSTMLayer(numHiddenUnits, hidden_size, hidden_size, batch_size))
+        self.firstLayer = LSTMLayer(numHiddenUnits, input_size, hidden_size, batch_size)
+        self.secondLayer = LSTMLayer(numHiddenUnits, hidden_size, hidden_size, batch_size)
+        # self.ListOfLayers = []
+        # for i in range(num_layers):
+        #     if i == 0:
+        #         self.ListOfLayers.append(LSTMLayer(numHiddenUnits, input_size, hidden_size, batch_size))
+        #     else:
+        #         self.ListOfLayers.append(LSTMLayer(numHiddenUnits, hidden_size, hidden_size, batch_size))
 
     def forward(self, batch_x, initial_state, initial_state_c):
-        for i in range(self.num_layers):
-            if i == 0:
-                out = self.ListOfLayers[i](batch_x, initial_state, initial_state_c)
-            else:
-                out = self.ListOfLayers[i](out[0], out[1], out[2])
-        # out_first = self.firstLayer(batch_x, initial_state, initial_state_c)
-        # out_second = self.secondLayer(out_first[0], out_first[1], out_first[2])
-        return out[0], out[1]
+        # for i in range(self.num_layers):
+        #     if i == 0:
+        #         out = self.ListOfLayers[i](batch_x, initial_state, initial_state_c)
+        #     else:
+        #         out = self.ListOfLayers[i](out[0], out[1], out[2])
+        out_first = self.firstLayer(batch_x, initial_state, initial_state_c)
+        out_second = self.secondLayer(out_first[0], out_first[1], out_first[2])
+        return out_second
 
 
 class PTBLM(nn.Module):
