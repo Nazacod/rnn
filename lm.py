@@ -42,7 +42,7 @@ def batch_generator(data_path, batch_size, num_steps):
 
 class LSTMCell(nn.Module):
     # input_size = emb_size
-    def __init__(self, input_size, hidden_size, batch_size):
+    def __init__(self, input_size, hidden_size, batch_size, device):
         super(LSTMCell, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -54,6 +54,7 @@ class LSTMCell(nn.Module):
         self.B_hidden = nn.Parameter(torch.Tensor(batch_size, 4 * hidden_size))
 
         self.reset_parameters()
+        self.to(device)
 
     def forward(self, inp, initial_state, initial_state_c):
         # print(inp.device)
@@ -79,7 +80,7 @@ class LSTMCell(nn.Module):
 
 # input.shape(batch_size, emb_size)
 class LSTMLayer(nn.Module):
-    def __init__(self, numHiddenUnits, input_size, hidden_size, batch_size):
+    def __init__(self, numHiddenUnits, input_size, hidden_size, batch_size, device):
         super(LSTMLayer, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -87,7 +88,8 @@ class LSTMLayer(nn.Module):
         self.numHiddenUnits = numHiddenUnits
         self.ListOfCells = {}
         for i in range(self.numHiddenUnits):
-            self.ListOfCells[str(i)] = LSTMCell(input_size, hidden_size, batch_size)
+            self.ListOfCells[str(i)] = LSTMCell(input_size, hidden_size, batch_size, device)
+        self.to(device)
 
     def forward(self, batch_x, initial_state, initial_state_c):
         outputs = []
@@ -107,14 +109,15 @@ class LSTMLayer(nn.Module):
 
 # numHiddenUnits = seq_len(num_steps)
 class LSTM(nn.Module):
-    def __init__(self, numHiddenUnits, input_size, hidden_size, batch_size, num_layers):
+    def __init__(self, numHiddenUnits, input_size, hidden_size, batch_size, num_layers, device):
         super(LSTM, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.batch_size = batch_size
         self.num_layers = num_layers
-        self.firstLayer = LSTMLayer(numHiddenUnits, input_size, hidden_size, batch_size)
-        self.secondLayer = LSTMLayer(numHiddenUnits, hidden_size, hidden_size, batch_size)
+        self.firstLayer = LSTMLayer(numHiddenUnits, input_size, hidden_size, batch_size, device)
+        self.secondLayer = LSTMLayer(numHiddenUnits, hidden_size, hidden_size, batch_size, device)
+        self.to(device)
         # self.ListOfLayers = []
         # for i in range(num_layers):
         #     if i == 0:
@@ -136,7 +139,7 @@ class LSTM(nn.Module):
 
 
 class PTBLM(nn.Module):
-    def __init__(self, emb_size, hidden_size, vocab_size, num_steps, batch_size, num_layers):
+    def __init__(self, emb_size, hidden_size, vocab_size, num_steps, batch_size, num_layers, device):
         super(PTBLM, self).__init__()
         self.emb_size = emb_size
         self.hidden_size = hidden_size
@@ -149,7 +152,7 @@ class PTBLM(nn.Module):
         self.embedding = nn.Embedding(num_embeddings=vocab_size,
                                       embedding_dim=emb_size)
         # Creating a recurrent cell. For multiple recurrent layers, you need to create the same number of recurrent cells.
-        self.lstm = LSTM(num_steps, emb_size, hidden_size, batch_size, num_layers)
+        self.lstm = LSTM(num_steps, emb_size, hidden_size, batch_size, num_layers, device)
         # Linear layer for projecting outputs from a recurrent layer into space with vocab_size dimension
         self.decoder = nn.Linear(in_features=hidden_size,
                                  out_features=vocab_size)
@@ -231,11 +234,11 @@ def train(token_list, word_to_id, id_to_word):
     :param token_list: a list of token ids
     :return: learnt parameters, or any object you like (it will be passed to the next_proba_gen function)
     """
-    config = get_small_config();
+    config = get_small_config()
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = PTBLM(config["emb_size"], config["hidden_size"],
                   config["vocab_size"], config["num_steps"],
-                  config["batch_size"], config['num_layers'])
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+                  config["batch_size"], config['num_layers'], device)
     print(device)
     model.to(device)
     loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
