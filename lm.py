@@ -93,8 +93,8 @@ class LSTMLayer(nn.Module):
         c = initial_state_c
         h = initial_state
         # batch_x.shape = (seq_len, batch_size, emb_size)
-        print("LSTMLayer")
-        print(self.ListOfCells.device)
+        # print("LSTMLayer")
+        # print(self.ListOfCells.device)
         for timestep in range(batch_x.shape[0]):
             result = self.ListOfCells[timestep](batch_x[timestep], h, c)
             h = result[0]
@@ -128,7 +128,7 @@ class LSTM(nn.Module):
         #     else:
         #         out = self.ListOfLayers[i](out[0], out[1], out[2])
         print("LSTM")
-        print(self.firstLayer.device)
+        print(self.firstLayer.ListOfCells[0].W_input.device)
         out_first = self.firstLayer(batch_x, initial_state, initial_state_c)
         out_second = self.secondLayer(out_first[0], out_first[1], out_first[2])
         return out_second
