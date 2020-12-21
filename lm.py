@@ -13,6 +13,7 @@ NGRAM = 2
 START_TOKEN = '<start>'
 EOS_TOKEN = '<eos>'
 device_glob = ""
+np.random.seed(42)
 
 
 def normalize(x):
@@ -223,7 +224,7 @@ def get_small_config():
     config = {'lr': 0.1, 'lr_decay': 0.5,
               'max_grad_norm': 5, 'emb_size': 200,
               'hidden_size': 200, 'max_epoch': 5,
-              'max_max_epoch': 10, 'batch_size': 64,
+              'max_max_epoch': 1, 'batch_size': 64,
               'num_steps': 35, 'num_layers': 2,
               'vocab_size': 10000}
     return config
@@ -304,6 +305,7 @@ def next_proba_gen(token_gen, params, hidden_state=None):
             [unigram_probs * lambda1 + np.asarray(m[token, :]).reshape(-1) * lambda2 for token in token_arr])
         assert (np.abs(np.sum(probs, axis=-1) - 1) < 1e-5).all()
         assert probs.shape[1] == vocab_size
+        print(probs.shape)
         yield probs, hidden_state
 
     ############################# REPLACE THIS WITH YOUR CODE #############################
