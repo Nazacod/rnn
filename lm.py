@@ -135,7 +135,7 @@ class LSTM(nn.Module):
         # print(self.firstLayer.ListOfCells[0].W_input.device)
         out_first = self.firstLayer(batch_x, initial_state, initial_state_c)
         out_second = self.secondLayer(out_first[0], out_first[1], out_first[2])
-        return out_second
+        return out_second[0], out_second[1]
 
 
 class PTBLM(nn.Module):
