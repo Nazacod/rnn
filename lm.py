@@ -289,6 +289,7 @@ def next_proba_gen(token_gen, params, hidden_state=None):
     config = get_small_config()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     for X in token_gen:
+        X = torch.tensor(X)
         X = X.to(device)
         params.eval()
         init = params.init_hidden(config['batch_size'])
