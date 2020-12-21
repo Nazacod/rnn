@@ -298,8 +298,7 @@ def next_proba_gen(token_gen, params, hidden_state=None):
 
     config = get_small_config()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    data = next(token_gen)
-    for X in torch.chunk(data, data .shape[1] // params['num_steps'], dim=1):
+    for X in token_gen:
         print(type(X))
         print(X.shape)
         X = torch.tensor(X)
