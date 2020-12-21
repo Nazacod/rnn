@@ -165,8 +165,10 @@ class PTBLM(nn.Module):
     def forward(self, model_input, initial_state, initial_state_c):
         #embs.shape = (seq_len, batch_size, emb_size)
         # print("PTBLM")
+        print(model_input.shape)
         embs = self.embedding(model_input).transpose(0, 1).contiguous()
-        # print(embs.device)
+        print('embed!')
+        print(model_input.shape)
         outputs, hidden = self.lstm(embs, initial_state, initial_state_c)
         logits = self.decoder(outputs).transpose(0, 1).contiguous()
 
