@@ -179,12 +179,12 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
     # print('Hello')
     for step, (X, Y) in enumerate(generator):
         print(step)
-        print(X.device)
+        # print(X.device)
         X = X.to(device)
-        print(X.device)
-        print(Y.device)
+        # print(X.device)
+        # print(Y.device)
         Y = Y.to(device)
-        print(Y.device)
+        # print(Y.device)
         if optimizer is not None:
             optimizer.zero_grad()
         init = model.init_hidden(batch_size)
@@ -233,7 +233,7 @@ def train(token_list, word_to_id, id_to_word):
     model.to(device)
     loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
-    model
+    # model
     plot_data = []
     for i in range(config['max_max_epoch']):
         lr_decay = config['lr_decay'] ** max(i + 1 - config['max_epoch'], 0.0)
