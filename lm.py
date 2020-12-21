@@ -178,7 +178,7 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
         print(step)
         print(X.device)
         X = X.to(device)
-        print(X.devic
+        print(X.device)
         print(Y.device)
         Y = Y.to(device)
         print(Y.device)
