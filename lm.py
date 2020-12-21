@@ -61,7 +61,7 @@ class LSTMCell(nn.Module):
         # print(inp.device)
         # print(self.W_input.device)
         # print(self.B_input.device)
-        print(inp.shape)
+        # print(inp.shape)
         i_all = torch.matmul(inp, self.W_input) + self.B_input
         h_all = torch.matmul(initial_state, self.W_hidden) + self.B_hidden
         tmp = i_all + h_all
@@ -177,10 +177,10 @@ class PTBLM(nn.Module):
     def forward(self, model_input, initial_state, initial_state_c):
         #embs.shape = (seq_len, batch_size, emb_size)
         # print("PTBLM")
-        print(model_input.shape)
+        # print(model_input.shape)
         embs = self.embedding(model_input).transpose(0, 1).contiguous()
-        print('embed!')
-        print(embs.shape)
+        # print('embed!')
+        # print(embs.shape)
         outputs, hidden = self.lstm(embs, initial_state, initial_state_c)
         logits = self.decoder(outputs).transpose(0, 1).contiguous()
 
@@ -239,7 +239,7 @@ def get_small_config():
     config = {'lr': 0.1, 'lr_decay': 0.5,
               'max_grad_norm': 5, 'emb_size': 200,
               'hidden_size': 200, 'max_epoch': 5,
-              'max_max_epoch': 1, 'batch_size': 64,
+              'max_max_epoch': 13, 'batch_size': 64,
               'num_steps': 35, 'num_layers': 2,
               'vocab_size': 10000}
     return config
@@ -262,7 +262,7 @@ def train(token_list, word_to_id, id_to_word):
     :return: learnt parameters, or any object you like (it will be passed to the next_proba_gen function)
     """
     config = get_small_config()
-    print(len(token_list))
+    # print(len(token_list))
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = PTBLM(config["emb_size"], config["hidden_size"],
                   config["vocab_size"], config["num_steps"],
