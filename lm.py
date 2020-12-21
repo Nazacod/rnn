@@ -232,8 +232,9 @@ def get_small_config():
 
 def batch_for_x(input_indexes, batch_size, num_steps):
     size = num_steps * batch_size
-    input_indexes = input_indexes[:len(input_indexes) - (len(input_indexes) % (size))]
-    for i in range(len(input_indexes) // size):
+    length = len(input_indexes)
+    input_indexes = input_indexes[:length - (length % (size))]
+    for i in range(length // size):
         x = torch.tensor(input_indexes[i * size:(i + 1) * size]
                          , dtype=torch.int64)
         yield x.view(batch_size, num_steps)
