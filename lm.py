@@ -55,14 +55,14 @@ class LSTMCell(nn.Module):
 
         self.reset_parameters()
 
-    def forward(self, inp, initial_state, initial_state_c):
+    def forward(self, inp, initial_state, initial_state_c, device):
         # print(inp.device)
         # print(self.W_input.device)
         # print(self.B_input.device)
-        self.W_input = self.W_input.to(device_glob)
-        self.B_input = self.B_input.to(device_glob)
-        self.W_hidden = self.W_hidden.to(device_glob)
-        self.B_hidden = self.B_hidden.to(device_glob)
+        self.W_input = self.W_input.to(device)
+        self.B_input = self.B_input.to(device)
+        self.W_hidden = self.W_hidden.to(device)
+        self.B_hidden = self.B_hidden.to(device)
         i_all = torch.matmul(inp, self.W_input) + self.B_input
         h_all = torch.matmul(initial_state, self.W_hidden) + self.B_hidden
         tmp = i_all + h_all
@@ -93,7 +93,7 @@ class LSTMLayer(nn.Module):
         for i in range(self.numHiddenUnits):
             self.ListOfCells.append(LSTMCell(input_size, hidden_size, batch_size))
 
-    def forward(self, batch_x, initial_state, initial_state_c):
+    def forward(self, batch_x, initial_state, initial_state_c, device):
         outputs = []
         c = initial_state_c
         h = initial_state
@@ -101,7 +101,7 @@ class LSTMLayer(nn.Module):
         # print("LSTMLayer")
         # print(self.ListOfCells.device)
         for timestep in range(batch_x.shape[0]):
-            result = self.ListOfCells[timestep](batch_x[timestep], h, c)
+            result = self.ListOfCells[timestep](batch_x[timestep], h, c, device)
             h = result[0]
             c = result[1]
             outputs.append(h)
@@ -126,7 +126,7 @@ class LSTM(nn.Module):
         #     else:
         #         self.ListOfLayers.append(LSTMLayer(numHiddenUnits, hidden_size, hidden_size, batch_size))
 
-    def forward(self, batch_x, initial_state, initial_state_c):
+    def forward(self, batch_x, initial_state, initial_state_c, device):
         # for i in range(self.num_layers):
         #     if i == 0:
         #         out = self.ListOfLayers[i](batch_x, initial_state, initial_state_c)
@@ -134,8 +134,8 @@ class LSTM(nn.Module):
         #         out = self.ListOfLayers[i](out[0], out[1], out[2])
         # print("LSTM")
         # print(self.firstLayer.ListOfCells[0].W_input.device)
-        out_first = self.firstLayer(batch_x, initial_state, initial_state_c)
-        out_second = self.secondLayer(out_first[0], out_first[1], out_first[2])
+        out_first = self.firstLayer(batch_x, initial_state, initial_state_c, device)
+        out_second = self.secondLayer(out_first[0], out_first[1], out_first[2], device)
         return out_second
 
 
@@ -166,7 +166,7 @@ class PTBLM(nn.Module):
         print("PTBLM")
         embs = self.embedding(model_input).transpose(0, 1).contiguous()
         print(embs.device)
-        outputs, hidden = self.lstm(embs, initial_state, initial_state_c)
+        outputs, hidden = self.lstm(embs, initial_state, initial_state_c, embs.device)
         logits = self.decoder(outputs).transpose(0, 1).contiguous()
 
         return logits, hidden
@@ -204,7 +204,7 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
         initial_state = initial_state.to(device)
         initial_state_c = initial_state_c.to(device)
 
-        logits, _ = model(X, initial_state, initial_state_c)
+        logits, _ = model(X, initial_state, initial_state_c, device)
 
         loss = loss_fn(logits.view((-1, model.vocab_size)), Y.view(-1))
         total_examples += loss.size(0)
@@ -240,7 +240,6 @@ def train(token_list, word_to_id, id_to_word):
                   config["vocab_size"], config["num_steps"],
                   config["batch_size"], config['num_layers'])
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device_glob = device
     print(device)
     model.to(device)
     loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
