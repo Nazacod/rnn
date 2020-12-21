@@ -286,26 +286,43 @@ def next_proba_gen(token_gen, params, hidden_state=None):
      For sampling from language model it will be used as the initial state for the following tokens.
     """
 
-    ############################# REPLACE THIS WITH YOUR CODE #############################
+    config = get_small_config()
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    for X in token_gen:
+        X = X.to(device)
+        params.eval()
+        init = params.init_hidden(config['batch_size'])
+        if hidden_state is None:
+            initial_state = init[0]
+        else:
+            initial_state = hidden_state
+        initial_state_c = init[1]
+        initial_state = initial_state.to(device)
+        initial_state_c = initial_state_c.to(device)
+        with torch.no_grad():
+            probs, hidden_state = params(X, initial_state, initial_state_c)
 
-    # This is interpolation between Unigram and Bigram language models
-    vocab_size, counters = params
-    lambda1, lambda2 = 0.2, 0.8
-    unigram_probs = normalize(np.array([counters[0][(i,)] for i in range(vocab_size)]))
-    bigrams = list(counters[1].keys())
-    ii, jj = zip(*bigrams)
-    ii, jj = list(ii), list(jj)
-    data = [counters[1][p] for p in bigrams]
-    m = csr_matrix((data, (ii, jj)), shape=(vocab_size, vocab_size))
-    m /= m.sum(axis=1).reshape(vocab_size, 1)
-    # print(m.sum(axis=1))
-
-    for token_arr in token_gen:
-        probs = np.vstack(
-            [unigram_probs * lambda1 + np.asarray(m[token, :]).reshape(-1) * lambda2 for token in token_arr])
-        assert (np.abs(np.sum(probs, axis=-1) - 1) < 1e-5).all()
-        assert probs.shape[1] == vocab_size
-        print(probs.shape)
         yield probs, hidden_state
+    # ############################# REPLACE THIS WITH YOUR CODE #############################
+    #
+    # # This is interpolation between Unigram and Bigram language models
+    # vocab_size, counters = params
+    # lambda1, lambda2 = 0.2, 0.8
+    # unigram_probs = normalize(np.array([counters[0][(i,)] for i in range(vocab_size)]))
+    # bigrams = list(counters[1].keys())
+    # ii, jj = zip(*bigrams)
+    # ii, jj = list(ii), list(jj)
+    # data = [counters[1][p] for p in bigrams]
+    # m = csr_matrix((data, (ii, jj)), shape=(vocab_size, vocab_size))
+    # m /= m.sum(axis=1).reshape(vocab_size, 1)
+    # # print(m.sum(axis=1))
+    #
+    # for token_arr in token_gen:
+    #     probs = np.vstack(
+    #         [unigram_probs * lambda1 + np.asarray(m[token, :]).reshape(-1) * lambda2 for token in token_arr])
+    #     assert (np.abs(np.sum(probs, axis=-1) - 1) < 1e-5).all()
+    #     assert probs.shape[1] == vocab_size
+    #     print(probs.shape)
+    #     yield probs, hidden_state
 
     ############################# REPLACE THIS WITH YOUR CODE #############################
