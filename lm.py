@@ -61,6 +61,7 @@ class LSTMCell(nn.Module):
         # print(inp.device)
         # print(self.W_input.device)
         # print(self.B_input.device)
+        print(inp.size)
         i_all = torch.matmul(inp, self.W_input) + self.B_input
         h_all = torch.matmul(initial_state, self.W_hidden) + self.B_hidden
         tmp = i_all + h_all
