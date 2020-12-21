@@ -57,7 +57,7 @@ class LSTMCell(nn.Module):
     def forward(self, inp, initial_state, initial_state_c):
         print(inp.device)
         print(self.W_input.device)
-        print(self.self.B_input.device)
+        print(self.B_input.device)
         i_all = torch.matmul(inp, self.W_input) + self.B_input
         h_all = torch.matmul(initial_state, self.W_hidden) + self.B_hidden
         tmp = i_all + h_all
@@ -154,7 +154,9 @@ class PTBLM(nn.Module):
 
     def forward(self, model_input, initial_state, initial_state_c):
         #embs.shape = (seq_len, batch_size, emb_size)
+        print("PTBLM")
         embs = self.embedding(model_input).transpose(0, 1).contiguous()
+        print(embs.device)
         outputs, hidden = self.lstm(embs, initial_state, initial_state_c)
         logits = self.decoder(outputs).transpose(0, 1).contiguous()
 
