@@ -221,6 +221,7 @@ def train(token_list, word_to_id, id_to_word):
                   config["vocab_size"], config["num_steps"],
                   config["batch_size"], config['num_layers'])
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print(device)
     model.to(device)
     loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
