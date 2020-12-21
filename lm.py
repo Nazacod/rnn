@@ -12,6 +12,7 @@ torch.manual_seed(42)
 NGRAM = 2
 START_TOKEN = '<start>'
 EOS_TOKEN = '<eos>'
+device_glob = ""
 
 
 def normalize(x):
@@ -58,6 +59,10 @@ class LSTMCell(nn.Module):
         # print(inp.device)
         # print(self.W_input.device)
         # print(self.B_input.device)
+        self.W_input = self.W_input.to(device_glob)
+        self.B_input = self.B_input.to(device_glob)
+        self.W_hidden = self.W_hidden.to(device_glob)
+        self.B_hidden = self.B_hidden.to(device_glob)
         i_all = torch.matmul(inp, self.W_input) + self.B_input
         h_all = torch.matmul(initial_state, self.W_hidden) + self.B_hidden
         tmp = i_all + h_all
@@ -127,8 +132,8 @@ class LSTM(nn.Module):
         #         out = self.ListOfLayers[i](batch_x, initial_state, initial_state_c)
         #     else:
         #         out = self.ListOfLayers[i](out[0], out[1], out[2])
-        print("LSTM")
-        print(self.firstLayer.ListOfCells[0].W_input.device)
+        # print("LSTM")
+        # print(self.firstLayer.ListOfCells[0].W_input.device)
         out_first = self.firstLayer(batch_x, initial_state, initial_state_c)
         out_second = self.secondLayer(out_first[0], out_first[1], out_first[2])
         return out_second
@@ -235,6 +240,7 @@ def train(token_list, word_to_id, id_to_word):
                   config["vocab_size"], config["num_steps"],
                   config["batch_size"], config['num_layers'])
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device_glob = device
     print(device)
     model.to(device)
     loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
