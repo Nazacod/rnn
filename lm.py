@@ -41,16 +41,16 @@ def batch_generator(data_path, batch_size, num_steps):
 
 class LSTMCell(nn.Module):
     # input_size = emb_size
-    def __init__(self, input_size, hidden_size, batch_size, device):
+    def __init__(self, input_size, hidden_size, batch_size):
         super(LSTMCell, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
 
-        self.W_input = nn.Parameter(torch.tensor(input_size, 4 * hidden_size, device=device))
-        self.B_input = nn.Parameter(torch.tensor(batch_size, 4 * hidden_size, device=device))
+        self.W_input = nn.Parameter(torch.Tensor(input_size, 4 * hidden_size))
+        self.B_input = nn.Parameter(torch.Tensor(batch_size, 4 * hidden_size))
 
-        self.W_hidden = nn.Parameter(torch.tensor(hidden_size, 4 * hidden_size, device=device))
-        self.B_hidden = nn.Parameter(torch.tensor(batch_size, 4 * hidden_size, device=device))
+        self.W_hidden = nn.Parameter(torch.Tensor(hidden_size, 4 * hidden_size))
+        self.B_hidden = nn.Parameter(torch.Tensor(batch_size, 4 * hidden_size))
 
         self.reset_parameters()
 
@@ -75,7 +75,7 @@ class LSTMCell(nn.Module):
 
 # input.shape(batch_size, emb_size)
 class LSTMLayer(nn.Module):
-    def __init__(self, numHiddenUnits, input_size, hidden_size, batch_size, device):
+    def __init__(self, numHiddenUnits, input_size, hidden_size, batch_size):
         super(LSTMLayer, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -83,7 +83,7 @@ class LSTMLayer(nn.Module):
         self.numHiddenUnits = numHiddenUnits
         self.ListOfCells = []
         for i in range(self.numHiddenUnits):
-            self.ListOfCells.append(LSTMCell(input_size, hidden_size, batch_size, device))
+            self.ListOfCells.append(LSTMCell(input_size, hidden_size, batch_size))
 
     def forward(self, batch_x, initial_state, initial_state_c):
         outputs = []
@@ -101,7 +101,7 @@ class LSTMLayer(nn.Module):
 
 # numHiddenUnits = seq_len(num_steps)
 class LSTM(nn.Module):
-    def __init__(self, numHiddenUnits, input_size, hidden_size, batch_size, num_layers, device):
+    def __init__(self, numHiddenUnits, input_size, hidden_size, batch_size, num_layers):
         super(LSTM, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -112,9 +112,9 @@ class LSTM(nn.Module):
         self.ListOfLayers = []
         for i in range(num_layers):
             if i == 0:
-                self.ListOfLayers.append(LSTMLayer(numHiddenUnits, input_size, hidden_size, batch_size, device))
+                self.ListOfLayers.append(LSTMLayer(numHiddenUnits, input_size, hidden_size, batch_size))
             else:
-                self.ListOfLayers.append(LSTMLayer(numHiddenUnits, hidden_size, hidden_size, batch_size, device))
+                self.ListOfLayers.append(LSTMLayer(numHiddenUnits, hidden_size, hidden_size, batch_size))
 
     def forward(self, batch_x, initial_state, initial_state_c):
         for i in range(self.num_layers):
@@ -128,7 +128,7 @@ class LSTM(nn.Module):
 
 
 class PTBLM(nn.Module):
-    def __init__(self, emb_size, hidden_size, vocab_size, num_steps, batch_size, num_layers, device):
+    def __init__(self, emb_size, hidden_size, vocab_size, num_steps, batch_size, num_layers):
         super(PTBLM, self).__init__()
         self.emb_size = emb_size
         self.hidden_size = hidden_size
@@ -141,7 +141,7 @@ class PTBLM(nn.Module):
         self.embedding = nn.Embedding(num_embeddings=vocab_size,
                                       embedding_dim=emb_size)
         # Creating a recurrent cell. For multiple recurrent layers, you need to create the same number of recurrent cells.
-        self.lstm = LSTM(num_steps, emb_size, hidden_size, batch_size, num_layers, device)
+        self.lstm = LSTM(num_steps, emb_size, hidden_size, batch_size, num_layers)
         # Linear layer for projecting outputs from a recurrent layer into space with vocab_size dimension
         self.decoder = nn.Linear(in_features=hidden_size,
                                  out_features=vocab_size)
@@ -149,10 +149,10 @@ class PTBLM(nn.Module):
         # Weights initialization
         self.init_weights()
 
-    def forward(self, model_input, initial_state, initial_state_c, device):
+    def forward(self, model_input, initial_state, initial_state_c):
         #embs.shape = (seq_len, batch_size, emb_size)
         embs = self.embedding(model_input).transpose(0, 1).contiguous()
-        outputs, hidden = self.lstm(embs, initial_state, initial_state_c, device)
+        outputs, hidden = self.lstm(embs, initial_state, initial_state_c)
         logits = self.decoder(outputs).transpose(0, 1).contiguous()
 
         return logits, hidden
@@ -185,7 +185,7 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
         initial_state = initial_state.to(device)
         initial_state_c = initial_state_c.to(device)
 
-        logits, _ = model(X, initial_state, initial_state_c, device)
+        logits, _ = model(X, initial_state, initial_state_c)
 
         loss = loss_fn(logits.view((-1, model.vocab_size)), Y.view(-1))
         total_examples += loss.size(0)
@@ -217,11 +217,10 @@ def train(token_list, word_to_id, id_to_word):
     :return: learnt parameters, or any object you like (it will be passed to the next_proba_gen function)
     """
     config = get_small_config();
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = PTBLM(config["emb_size"], config["hidden_size"],
                   config["vocab_size"], config["num_steps"],
-                  config["batch_size"], config['num_layers'], device)
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+                  config["batch_size"], config['num_layers'])
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
     loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
