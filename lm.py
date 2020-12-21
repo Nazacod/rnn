@@ -176,8 +176,12 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
     # print('Hello')
     for step, (X, Y) in enumerate(generator):
         print(step)
+        print(X.device)
         X = X.to(device)
+        print(X.devic
+        print(Y.device)
         Y = Y.to(device)
+        print(Y.device)
         if optimizer is not None:
             optimizer.zero_grad()
         init = model.init_hidden(batch_size)
