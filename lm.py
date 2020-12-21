@@ -249,37 +249,45 @@ def train(token_list, word_to_id, id_to_word):
     :param token_list: a list of token ids
     :return: learnt parameters, or any object you like (it will be passed to the next_proba_gen function)
     """
-    config = get_small_config()
-    print(len(token_list))
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = PTBLM(config["emb_size"], config["hidden_size"],
-                  config["vocab_size"], config["num_steps"],
-                  config["batch_size"], config['num_layers'], device)
-    # print(device)
-    model.to(device)
-    loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
-    optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
-    # model
-    plot_data = []
-    for i in range(config['max_max_epoch']):
-        lr_decay = config['lr_decay'] ** max(i + 1 - config['max_epoch'], 0.0)
-        decayed_lr = config['lr'] * lr_decay
+    # config = get_small_config()
+    # print(len(token_list))
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # model = PTBLM(config["emb_size"], config["hidden_size"],
+    #               config["vocab_size"], config["num_steps"],
+    #               config["batch_size"], config['num_layers'], device)
+    # # print(device)
+    # model.to(device)
+    # loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
+    # optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
+    # # model
+    # plot_data = []
+    # for i in range(config['max_max_epoch']):
+    #     lr_decay = config['lr_decay'] ** max(i + 1 - config['max_epoch'], 0.0)
+    #     decayed_lr = config['lr'] * lr_decay
+    #
+    #     model.train()
+    #     train_perplexity = run_epoch(decayed_lr, model, token_list,
+    #                                  word_to_id, loss_fn,
+    #                                  optimizer=optimizer,
+    #                                  device=device,
+    #                                  batch_size=config["batch_size"],
+    #                                  num_steps=config["num_steps"])
+    #
+    #     plot_data.append((i, train_perplexity, decayed_lr))
+    #     print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
+    #           f'Train Perplexity: {train_perplexity:.3f}. ')
+    # epochs, ppl_train, lr = zip(*plot_data)
+    # plt.plot(epochs, ppl_train, 'g', label='Perplexity')
+    # plt.savefig('lr.png', dpi=1000, format='png')
+    # return model
 
-        model.train()
-        train_perplexity = run_epoch(decayed_lr, model, token_list,
-                                     word_to_id, loss_fn,
-                                     optimizer=optimizer,
-                                     device=device,
-                                     batch_size=config["batch_size"],
-                                     num_steps=config["num_steps"])
 
-        plot_data.append((i, train_perplexity, decayed_lr))
-        print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
-              f'Train Perplexity: {train_perplexity:.3f}. ')
-    epochs, ppl_train, lr = zip(*plot_data)
-    plt.plot(epochs, ppl_train, 'g', label='Perplexity')
-    plt.savefig('lr.png', dpi=1000, format='png')
-    return model
+    ############################# REPLACE THIS WITH YOUR CODE #############################
+    l = len(token_list)
+    counters = [Counter(tuple(token_list[i:i + ng]) for i in range(l - ng)) for ng in range(1, NGRAM + 1)]
+    vocab_size = len(word_to_id)
+    return vocab_size, counters
+    ############################# REPLACE THIS WITH YOUR CODE #############################
 
 
 def next_proba_gen(token_gen, params, hidden_state=None):
