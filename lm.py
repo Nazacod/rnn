@@ -162,9 +162,9 @@ class PTBLM(nn.Module):
 
     def forward(self, model_input, initial_state, initial_state_c):
         #embs.shape = (seq_len, batch_size, emb_size)
-        print("PTBLM")
+        # print("PTBLM")
         embs = self.embedding(model_input).transpose(0, 1).contiguous()
-        print(embs.device)
+        # print(embs.device)
         outputs, hidden = self.lstm(embs, initial_state, initial_state_c)
         logits = self.decoder(outputs).transpose(0, 1).contiguous()
 
@@ -189,6 +189,7 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
     # print('Hello')
     for step, (X, Y) in enumerate(generator):
         print(step)
+        # print(X.shape)
         # print(X.device)
         X = X.to(device)
         # print(X.device)
@@ -222,7 +223,7 @@ def get_small_config():
     config = {'lr': 0.1, 'lr_decay': 0.5,
               'max_grad_norm': 5, 'emb_size': 200,
               'hidden_size': 200, 'max_epoch': 5,
-              'max_max_epoch': 13, 'batch_size': 1,
+              'max_max_epoch': 1, 'batch_size': 64,
               'num_steps': 35, 'num_layers': 2,
               'vocab_size': 10000}
     return config
@@ -235,11 +236,12 @@ def train(token_list, word_to_id, id_to_word):
     :return: learnt parameters, or any object you like (it will be passed to the next_proba_gen function)
     """
     config = get_small_config()
+    print(len(token_list))
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = PTBLM(config["emb_size"], config["hidden_size"],
                   config["vocab_size"], config["num_steps"],
                   config["batch_size"], config['num_layers'], device)
-    print(device)
+    # print(device)
     model.to(device)
     loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
