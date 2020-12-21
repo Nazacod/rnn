@@ -230,14 +230,14 @@ def get_small_config():
     return config
 
 
-def batch_for_x(input_indexes, batch_size, num_steps):
-    size = num_steps * batch_size
-    length = len(input_indexes)
-    input_indexes = input_indexes[:length - (length % (size))]
-    for i in range(length // size):
-        x = torch.tensor(input_indexes[i * size:(i + 1) * size]
-                         , dtype=torch.int64)
-        yield x.view(batch_size, num_steps)
+# def batch_for_x(input_indexes, batch_size, num_steps):
+#     size = num_steps * batch_size
+#     length = len(input_indexes)
+#     input_indexes = input_indexes[:length - (length % (size))]
+#     for i in range(length // size):
+#         x = torch.tensor(input_indexes[i * size:(i + 1) * size]
+#                          , dtype=torch.int64)
+#         yield x.view(batch_size, num_steps)
 
 
 def train(token_list, word_to_id, id_to_word):
@@ -298,7 +298,7 @@ def next_proba_gen(token_gen, params, hidden_state=None):
 
     config = get_small_config()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    for X in batch_for_x(token_gen, config['batch_size'], config['num_steps']):
+    for X in token_gen:
         X = X.to(device)
         params.eval()
         init = params.init_hidden(config['batch_size'])
