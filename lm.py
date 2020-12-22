@@ -5,9 +5,7 @@ from scipy.sparse import csr_matrix
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable as V
 import matplotlib.pyplot as plt
-# from torchviz import make_dot
 
 torch.manual_seed(42)
 
@@ -51,9 +49,11 @@ class LSTMCell(nn.Module):
         self.hidden_size = hidden_size
 
         self.W_input = nn.Parameter(torch.Tensor(input_size, 4 * hidden_size))
+        # self.B_input = nn.Parameter(torch.Tensor(batch_size, 4 * hidden_size))
         self.B_input = nn.Parameter(torch.Tensor(4 * hidden_size))
 
         self.W_hidden = nn.Parameter(torch.Tensor(hidden_size, 4 * hidden_size))
+        # self.B_hidden = nn.Parameter(torch.Tensor(batch_size, 4 * hidden_size))
         self.B_hidden = nn.Parameter(torch.Tensor(4 * hidden_size))
 
         self.reset_parameters()
@@ -91,39 +91,39 @@ class LSTMLayer(nn.Module):
         self.batch_size = batch_size
         self.numHiddenUnits = numHiddenUnits
         self.cnt = 0
-        self.lstmcell = LSTMCell(input_size, hidden_size, batch_size, device)
+        self.ListOfCells = {}
+        for i in range(self.numHiddenUnits):
+            self.ListOfCells[str(i)] = LSTMCell(input_size, hidden_size, batch_size, device)
         self.to(device)
 
     def forward(self, batch_x, initial_state, initial_state_c):
         outputs = []
-        h = initial_state
         c = initial_state_c
+        h = initial_state
         # batch_x.shape = (seq_len, batch_size, emb_size)
         # print("LSTMLayer")
         # print(self.ListOfCells.device)
-        # if batch_x.dim == 3:
+        # print(type(batch_x))
+        # print(type(batch_x.dim))
         if len(batch_x.shape) == 3:
-            h_loc = h
-            c_loc = c
             for timestep in range(batch_x.shape[0]):
-                h_loc, c_loc = self.lstmcell(batch_x[timestep], h_loc, c_loc)
-                # h = result[0]
-                # c = result[1]
-                outputs.append(h_loc)
+                result = self.ListOfCells[str(timestep)](batch_x[timestep], h, c)
+                h = result[0]
+                c = result[1]
+                outputs.append(h)
         else:
-            # initial_state & initial_state_c is h, c
-            result = self.lstmcell(batch_x, h, c)
+            #initial_state & initial_state_c is h, c
+            result = self.ListOfCells[str(self.cnt)](batch_x, initial_state, initial_state_c)
             self.cnt += 1
             if self.cnt == self.numHiddenUnits:
                 self.cnt = 0
-            # h = result[0]
-            # c = result[1]
-            return result[0], result[0], result[1]
+            # outputs.append(h)
+            h = result[0]
+            c = result[1]
+            return h, h, c
 
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
-        # h_out = h_loc
-        # c_out = c_loc
-        return torch.stack(outputs), V(h_loc), V(c_loc)
+        return torch.stack(outputs), h, c
 
 
 # numHiddenUnits = seq_len(num_steps)
@@ -144,8 +144,7 @@ class LSTM(nn.Module):
         #     else:
         #         self.ListOfLayers.append(LSTMLayer(numHiddenUnits, hidden_size, hidden_size, batch_size))
 
-    # h2 hc2 h1 hc1
-    def forward(self, batch_x, initial_state, initial_state_c, h=None, c=None):
+    def forward(self, batch_x, initial_state, initial_state_c):
         # for i in range(self.num_layers):
         #     if i == 0:
         #         out = self.ListOfLayers[i](batch_x, initial_state, initial_state_c)
@@ -153,13 +152,9 @@ class LSTM(nn.Module):
         #         out = self.ListOfLayers[i](out[0], out[1], out[2])
         # print("LSTM")
         # print(self.firstLayer.ListOfCells[0].W_input.device)
-        # if h is None:
-        out_first = self.firstLayer(batch_x, h, c)
-        # else:
-        #     out_first = self.firstLayer(batch_x, h, c)
-        out_second = self.secondLayer(out_first[0], initial_state, initial_state_c)
-        # return out_second[0], out_second[1]
-        return out_second[0], out_second[1], out_second[2], out_first[1], out_first[2]
+        out_first = self.firstLayer(batch_x, initial_state, initial_state_c)
+        out_second = self.secondLayer(out_first[0], out_first[1], out_first[2])
+        return out_second[0], out_second[1], out_first[2]
 
 
 class PTBLM(nn.Module):
@@ -184,25 +179,23 @@ class PTBLM(nn.Module):
         # Weights initialization
         self.init_weights()
 
-    def forward(self, model_input, initial_state, initial_state_c, hidden1=None, hidden_c1=None):
+    def forward(self, model_input, initial_state, initial_state_c):
         #embs.shape = (seq_len, batch_size, emb_size)
         # print("PTBLM")
         # print(model_input.shape)
+        ##.T ---- > .transpose(0, 1).contiguous() LAYER???
         if len(model_input.shape) == 2:
             embs = self.embedding(model_input).transpose(0, 1).contiguous()
         else:
             embs = self.embedding(model_input)
         # print('embed!')
         # print(embs.shape)
-        # h2 hc2 h1 hc1
-        outputs, hidden2, hidden_c2, hidden1, hidden_c1 = self.lstm(embs, initial_state,
-                                                                    initial_state_c, hidden1, hidden_c1)
-        # if len(model_input.shape) == 3:
+        outputs, hidden, hidden_c = self.lstm(embs, initial_state, initial_state_c)
         if len(outputs.shape) == 3:
             logits = self.decoder(outputs).transpose(0, 1).contiguous()
         else:
             logits = self.decoder(outputs)
-        return logits, hidden2, hidden_c2, hidden1, hidden_c1
+        return logits, hidden, hidden_c
 
     def init_weights(self):
         self.embedding.weight.data.uniform_(-0.1, 0.1)
@@ -215,12 +208,6 @@ class PTBLM(nn.Module):
 def update_lr(optimizer, lr):
     for g in optimizer.param_groups:
         g['lr'] = lr
-
-
-def print_nodes(fn, prefix=""):
-    print(prefix, fn.name())
-    for f in fn.next_functions:
-        print_nodes(f[0], prefix+"    ")
 
 
 def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None, batch_size=1, num_steps=35):
@@ -238,17 +225,13 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
         # print(Y.device)
         if optimizer is not None:
             optimizer.zero_grad()
-        if step == 0:
-            init = model.init_hidden(batch_size)
-            hidden_state = init[0]
-            hidden_state_c = init[1]
-            hidden_state = hidden_state.to(device)
-            h1 = hidden_state
-            hidden_state_c = hidden_state_c.to(device)
-            h_c1 = hidden_state_c
+        init = model.init_hidden(batch_size)
+        initial_state = init[0]
+        initial_state_c = init[1]
+        initial_state = initial_state.to(device)
+        initial_state_c = initial_state_c.to(device)
 
-        # logits, _, _, _, _ = model(X, initial_state, initial_state_c)
-        logits, hidden_state, hidden_state_c, h1, h_c1 = model(X, hidden_state, hidden_state_c, h1, h_c1)
+        logits, _, _ = model(X, initial_state, initial_state_c)
 
         loss = loss_fn(logits.view((-1, model.vocab_size)), Y.view(-1))
         total_examples += loss.size(0)
@@ -259,9 +242,6 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
             update_lr(optimizer, lr)
             loss.backward()
             optimizer.step()
-            # optimizer.zero_grad()
-            # print_nodes(loss.grad_fn)
-
 
     return np.exp(total_loss / total_examples)
 
@@ -269,8 +249,8 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
 def get_small_config():
     config = {'lr': 0.1, 'lr_decay': 0.5,
               'max_grad_norm': 5, 'emb_size': 200,
-              'hidden_size': 200, 'max_epoch': 80,
-              'max_max_epoch': 10, 'batch_size': 64,
+              'hidden_size': 200, 'max_epoch': 5,
+              'max_max_epoch': 1, 'batch_size': 64,
               'num_steps': 35, 'num_layers': 2,
               'vocab_size': 10000}
     return config
@@ -350,8 +330,9 @@ def next_proba_gen(token_gen, params, hidden_state=None):
      For sampling from language model it will be used as the initial state for the following tokens.
     """
 
+    # config = get_small_config()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    # X.shape(batch_size, )
+    #X.shape(batch_size, )
 
     flag = 0
     for X in token_gen:
@@ -364,17 +345,14 @@ def next_proba_gen(token_gen, params, hidden_state=None):
                 hidden_state = torch.tensor(hidden_state)
             hidden_state_c = init[1]
             hidden_state = hidden_state.to(device)
-            h1 = hidden_state
             hidden_state_c = hidden_state_c.to(device)
-            h_c1 = hidden_state_c
         # print(type(X))
         # print(X.shape)
         X = torch.tensor(X)
         X = X.to(device)
         params.eval()
         with torch.no_grad():
-            #h2 hc2 h1 hc1
-            probs, hidden_state, hidden_state_c, h1, h_c1 = params(X, hidden_state, hidden_state_c, h1, h_c1)
+            probs, hidden_state, hidden_state_c = params(X, hidden_state, hidden_state_c)
             # print(probs.shape)
             if torch.cuda.is_available():
                 probs = F.softmax(probs, dim=1)
