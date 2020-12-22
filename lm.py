@@ -113,11 +113,11 @@ class LSTMLayer(nn.Module):
                 outputs.append(h)
         else:
             #initial_state & initial_state_c is h, c
-            result = self.ListOfCells[str(self.cnt)](batch_x.T, initial_state, initial_state_c)
+            result = self.ListOfCells[str(self.cnt)](batch_x, initial_state, initial_state_c)
             self.cnt += 1
             if self.cnt == self.numHiddenUnits:
                 self.cnt = 0
-            outputs.append(h)
+            # outputs.append(h)
             h = result[0]
             c = result[1]
             return h, h, c
@@ -184,7 +184,10 @@ class PTBLM(nn.Module):
         # print("PTBLM")
         # print(model_input.shape)
         ##.T ---- > .transpose(0, 1).contiguous() LAYER???
-        embs = self.embedding(model_input).transpose(0, 1).contiguous()
+        if len(model_input.shape) == 3:
+            embs = self.embedding(model_input).transpose(0, 1).contiguous()
+        else:
+            embs = self.embedding(model_input)
         # print('embed!')
         # print(embs.shape)
         outputs, hidden, hidden_c = self.lstm(embs, initial_state, initial_state_c)
