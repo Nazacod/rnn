@@ -258,7 +258,7 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
 
 
 def get_small_config():
-    config = {'lr': 0.1, 'lr_decay': 0.5,
+    config = {'lr': 0.5, 'lr_decay': 0.5,
               'max_grad_norm': 5, 'emb_size': 200,
               'hidden_size': 200, 'max_epoch': 80,
               'max_max_epoch': 10, 'batch_size': 64,
