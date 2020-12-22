@@ -347,6 +347,6 @@ def next_proba_gen(token_gen, params, hidden_state=None):
         params.eval()
         with torch.no_grad():
             probs, hidden_state, hidden_state_c = params(X, hidden_state, hidden_state_c)
-
+            print(probs.shape)
         yield probs, hidden_state
 
