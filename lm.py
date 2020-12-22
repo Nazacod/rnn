@@ -103,6 +103,8 @@ class LSTMLayer(nn.Module):
         # batch_x.shape = (seq_len, batch_size, emb_size)
         # print("LSTMLayer")
         # print(self.ListOfCells.device)
+        print(type(batch_x))
+        print(type(batch_x.dim))
         if len(batch_x.dim) == 3:
             for timestep in range(batch_x.shape[0]):
                 result = self.ListOfCells[str(timestep)](batch_x[timestep], h, c)
