@@ -112,7 +112,7 @@ class Evaluator:
         if dontsum.any():
             raise Exception("Sum of the probabilities isn't equal to 1. Sum: {}".format(prob[dontsum]))
 
-    def predict_probs(self, model, id_to_word, data, unigram_probs, name, top_k=3, bs=64):
+    def predict_probs(self, model, id_to_word, data, unigram_probs, name, top_k=3, bs=100):
         data = np.array(data)
         tail = len(data)//bs*bs
         # X[i+1,j] is the next word after X[i,j]
@@ -124,7 +124,7 @@ class Evaluator:
         print(X.shape)
         print(X_tail.shape)
         print('predict end')
-        
+
         preds = []
         desc = 'Generate probability of the next word. Dataset: "{}", batch size: {}'.format(name, bs)
         X_protected_it = ProtectedTokenIterator(X)

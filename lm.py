@@ -63,7 +63,7 @@ class LSTMCell(nn.Module):
         # print(inp.device)
         # print(self.W_input.device)
         # print(self.B_input.device)
-        # print(inp.shape)
+        print(inp.shape)
         i_all = torch.matmul(inp, self.W_input) + self.B_input
         h_all = torch.matmul(initial_state, self.W_hidden) + self.B_hidden
         tmp = i_all + h_all
@@ -90,7 +90,7 @@ class LSTMLayer(nn.Module):
         self.hidden_size = hidden_size
         self.batch_size = batch_size
         self.numHiddenUnits = numHiddenUnits
-        # self.cnt = 0
+        self.cnt = 0
         self.ListOfCells = {}
         for i in range(self.numHiddenUnits):
             self.ListOfCells[str(i)] = LSTMCell(input_size, hidden_size, batch_size, device)
@@ -103,21 +103,21 @@ class LSTMLayer(nn.Module):
         # batch_x.shape = (seq_len, batch_size, emb_size)
         # print("LSTMLayer")
         # print(self.ListOfCells.device)
-        # if batch_x.dim == 3:
-        for timestep in range(batch_x.shape[0]):
-            result = self.ListOfCells[str(timestep)](batch_x[timestep], h, c)
+        if len(batch_x.dim) == 3:
+            for timestep in range(batch_x.shape[0]):
+                result = self.ListOfCells[str(timestep)](batch_x[timestep], h, c)
+                h = result[0]
+                c = result[1]
+                outputs.append(h)
+        else:
+            result = self.ListOfCells[str(self.cnt)](batch_x, self.hid, self.hid_c)
+            self.cnt += 1
+            params = get_small_config()
+            if self.cnt == params['num_steps']:
+                self.cnt = 0
+            outputs.append(h)
             h = result[0]
             c = result[1]
-            outputs.append(h)
-        # else:
-        #     result = self.ListOfCells[str(self.cnt)](batch_x, self.hid, self.hid_c)
-        #     self.cnt += 1
-        #     params = get_small_config()
-        #     if self.cnt == params['num_steps'] - 1:
-        #         self.cnt = 0
-        #     outputs.append(h)
-        #     h = result[0]
-        #     c = result[1]
 
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
         return torch.stack(outputs), h, c
@@ -241,7 +241,7 @@ def get_small_config():
     config = {'lr': 0.1, 'lr_decay': 0.5,
               'max_grad_norm': 5, 'emb_size': 200,
               'hidden_size': 200, 'max_epoch': 5,
-              'max_max_epoch': 13, 'batch_size': 64,
+              'max_max_epoch': 1, 'batch_size': 64,
               'num_steps': 35, 'num_layers': 2,
               'vocab_size': 10000}
     return config
@@ -324,22 +324,22 @@ def next_proba_gen(token_gen, params, hidden_state=None):
     config = get_small_config()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     #X.shape(batch_size, )
+    init = params.init_hidden(config['batch_size'])
+    if hidden_state is None:
+        hidden_state= init[0]
+    else:
+        hidden_state = torch.tensor(hidden_state)
+    hidden_state_c = init[1]
+    hidden_state = hidden_state.to(device)
+    hidden_state_c = hidden_state_c.to(device)
     for X in token_gen:
         # print(type(X))
         # print(X.shape)
         X = torch.tensor(X)
         X = X.to(device)
         params.eval()
-        init = params.init_hidden(config['batch_size'])
-        if hidden_state is None:
-            initial_state = init[0]
-        else:
-            initial_state = hidden_state
-        initial_state_c = init[1]
-        initial_state = initial_state.to(device)
-        initial_state_c = initial_state_c.to(device)
         with torch.no_grad():
-            probs, hidden_state = params(X, initial_state, initial_state_c)
+            probs, hidden_state, hidden_state_c = params(X, hidden_state, hidden_state_c)
 
         yield probs, hidden_state
 
