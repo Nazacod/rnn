@@ -354,5 +354,5 @@ def next_proba_gen(token_gen, params, hidden_state=None):
         with torch.no_grad():
             probs, hidden_state, hidden_state_c = params(X, hidden_state, hidden_state_c)
             print(probs.shape)
-        yield probs, hidden_state
+        yield F.softmax(probs, dim=0), hidden_state
 
