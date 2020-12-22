@@ -96,7 +96,7 @@ class LSTMLayer(nn.Module):
             self.ListOfCells[str(i)] = LSTMCell(input_size, hidden_size, batch_size, device)
         self.to(device)
 
-    def forward(self, batch_x, initial_state, initial_state_c, h=None, h_c=None):
+    def forward(self, batch_x, initial_state, initial_state_c):
         outputs = []
         c = initial_state_c
         h = initial_state
@@ -112,10 +112,10 @@ class LSTMLayer(nn.Module):
                 c = result[1]
                 outputs.append(h)
         else:
-            result = self.ListOfCells[str(self.cnt)](batch_x, self.hid, self.hid_c)
+            #initial_state & initial_state_c is h, c
+            result = self.ListOfCells[str(self.cnt)](batch_x, initial_state, initial_state_c)
             self.cnt += 1
-            params = get_small_config()
-            if self.cnt == params['num_steps']:
+            if self.cnt == self.numHiddenUnits:
                 self.cnt = 0
             outputs.append(h)
             h = result[0]
