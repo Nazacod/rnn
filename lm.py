@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
-from torchviz import make_dot
+# from torchviz import make_dot
 
 torch.manual_seed(42)
 
@@ -102,8 +102,10 @@ class LSTMLayer(nn.Module):
         # print(self.ListOfCells.device)
         # if batch_x.dim == 3:
         if len(batch_x.shape) == 3:
+            h_loc = h
+            c_loc = c
             for timestep in range(batch_x.shape[0]):
-                h, c = self.lstmcell(batch_x[timestep], h, c)
+                h_loc, c_loc = self.lstmcell(batch_x[timestep], h_loc, c_loc)
                 # h = result[0]
                 # c = result[1]
                 outputs.append(h)
@@ -248,8 +250,8 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
             update_lr(optimizer, lr)
             loss.backward()
             optimizer.step()
-            optimizer.zero_grad()
-            make_dot(loss)
+            # optimizer.zero_grad()
+            # make_dot(loss)
 
 
     return np.exp(total_loss / total_examples)
