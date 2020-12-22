@@ -5,8 +5,9 @@ from scipy.sparse import csr_matrix
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable as V
 import matplotlib.pyplot as plt
-# from torchviz import make_dot
+from torchviz import make_dot
 
 torch.manual_seed(42)
 
@@ -122,7 +123,7 @@ class LSTMLayer(nn.Module):
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
         # h_out = h_loc
         # c_out = c_loc
-        return torch.stack(outputs), h_loc, c_loc
+        return torch.stack(outputs), V(h_loc), V(c_loc)
 
 
 # numHiddenUnits = seq_len(num_steps)
@@ -216,6 +217,12 @@ def update_lr(optimizer, lr):
         g['lr'] = lr
 
 
+def print_nodes(fn, prefix=""):
+    print(prefix, fn.name())
+    for f in fn.next_functions:
+        print_nodes(f[0], prefix+"    ")
+
+
 def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None, batch_size=1, num_steps=35):
     total_loss, total_examples = 0.0, 0
     generator = batch_generator("PTB/ptb.train.txt", batch_size, num_steps)
@@ -253,7 +260,7 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
             loss.backward()
             optimizer.step()
             # optimizer.zero_grad()
-            # make_dot(loss)
+            # print_nodes(loss.grad_fn)
 
 
     return np.exp(total_loss / total_examples)
