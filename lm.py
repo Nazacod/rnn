@@ -88,13 +88,13 @@ class LSTMLayer(nn.Module):
         self.hidden_size = hidden_size
         self.batch_size = batch_size
         self.numHiddenUnits = numHiddenUnits
-        # self.cnt = 0
+        self.cnt = 0
         self.ListOfCells = {}
         for i in range(self.numHiddenUnits):
             self.ListOfCells[str(i)] = LSTMCell(input_size, hidden_size, batch_size, device)
         self.to(device)
 
-    def forward(self, batch_x, initial_state, initial_state_c, h=None, h_c=None):
+    def forward(self, batch_x, initial_state, initial_state_c):
         outputs = []
         c = initial_state_c
         h = initial_state
@@ -102,11 +102,12 @@ class LSTMLayer(nn.Module):
         # print("LSTMLayer")
         # print(self.ListOfCells.device)
         # if batch_x.dim == 3:
-        for timestep in range(batch_x.shape[0]):
-            result = self.ListOfCells[str(timestep)](batch_x[timestep], h, c)
-            h = result[0]
-            c = result[1]
-            outputs.append(h)
+        if len(batch_x.shape) == 3:
+            for timestep in range(batch_x.shape[0]):
+                result = self.ListOfCells[str(timestep)](batch_x[timestep], h, c)
+                h = result[0]
+                c = result[1]
+                outputs.append(h)
         # else:
         #     result = self.ListOfCells[str(self.cnt)](batch_x, self.hid, self.hid_c)
         #     self.cnt += 1
