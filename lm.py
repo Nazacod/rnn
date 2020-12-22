@@ -112,9 +112,9 @@ class LSTMLayer(nn.Module):
             self.cnt += 1
             if self.cnt == self.numHiddenUnits:
                 self.cnt = 0
-            h = result[0]
-            c = result[1]
-            return h, h, c
+            # h = result[0]
+            # c = result[1]
+            return result[0], result[0], result[1]
 
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
         return torch.stack(outputs), h, c
@@ -245,7 +245,7 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
 
         if optimizer is not None:
             update_lr(optimizer, lr)
-            loss.backward()
+            loss.backward(retain_graph=True)
             optimizer.step()
 
     return np.exp(total_loss / total_examples)
