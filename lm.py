@@ -140,7 +140,7 @@ class LSTM(nn.Module):
         #     else:
         #         self.ListOfLayers.append(LSTMLayer(numHiddenUnits, hidden_size, hidden_size, batch_size))
 
-    def forward(self, batch_x, initial_state, initial_state_c):
+    def forward(self, batch_x, initial_state, initial_state_c, h=None, c=None):
         # for i in range(self.num_layers):
         #     if i == 0:
         #         out = self.ListOfLayers[i](batch_x, initial_state, initial_state_c)
@@ -150,7 +150,8 @@ class LSTM(nn.Module):
         # print(self.firstLayer.ListOfCells[0].W_input.device)
         out_first = self.firstLayer(batch_x, initial_state, initial_state_c)
         out_second = self.secondLayer(out_first[0], initial_state, initial_state_c)
-        return out_second[0], out_second[1]
+        # return out_second[0], out_second[1]
+        return out_second[0], out_second[1], out_second[2], out_first[1], out_first[2]
 
 
 class PTBLM(nn.Module):
@@ -179,10 +180,13 @@ class PTBLM(nn.Module):
         #embs.shape = (seq_len, batch_size, emb_size)
         # print("PTBLM")
         # print(model_input.shape)
-        embs = self.embedding(model_input).transpose(0, 1).contiguous()
+        if len(model_input.shape) == 2:
+            embs = self.embedding(model_input).transpose(0, 1).contiguous()
+        else:
+            embs = self.embedding(model_input)
         # print('embed!')
         # print(embs.shape)
-        outputs, hidden = self.lstm(embs, initial_state, initial_state_c)
+        outputs, hidden, _, _, _ = self.lstm(embs, initial_state, initial_state_c)
         logits = self.decoder(outputs).transpose(0, 1).contiguous()
 
         return logits, hidden
