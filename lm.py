@@ -182,6 +182,7 @@ class PTBLM(nn.Module):
         #embs.shape = (seq_len, batch_size, emb_size)
         # print("PTBLM")
         # print(model_input.shape)
+        ##.T ---- > .transpose(0, 1).contiguous() LAYER???
         embs = self.embedding(model_input).transpose(0, 1).contiguous()
         # print('embed!')
         # print(embs.shape)
@@ -326,15 +327,19 @@ def next_proba_gen(token_gen, params, hidden_state=None):
     config = get_small_config()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     #X.shape(batch_size, )
-    init = params.init_hidden(config['batch_size'])
-    if hidden_state is None:
-        hidden_state= init[0]
-    else:
-        hidden_state = torch.tensor(hidden_state)
-    hidden_state_c = init[1]
-    hidden_state = hidden_state.to(device)
-    hidden_state_c = hidden_state_c.to(device)
+
+    flag = 0
     for X in token_gen:
+        if flag == 0:
+            flag = 1
+            init = params.init_hidden(X.size[0])
+            if hidden_state is None:
+                hidden_state = init[0]
+            else:
+                hidden_state = torch.tensor(hidden_state)
+            hidden_state_c = init[1]
+            hidden_state = hidden_state.to(device)
+            hidden_state_c = hidden_state_c.to(device)
         # print(type(X))
         # print(X.shape)
         X = torch.tensor(X)
