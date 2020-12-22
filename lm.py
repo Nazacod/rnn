@@ -120,6 +120,7 @@ class LSTMLayer(nn.Module):
             outputs.append(h)
             h = result[0]
             c = result[1]
+            return outputs, h, c
 
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
         return torch.stack(outputs), h, c
