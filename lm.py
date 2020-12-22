@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable as V
 import matplotlib.pyplot as plt
-from torchviz import make_dot
+# from torchviz import make_dot
 
 torch.manual_seed(42)
 
