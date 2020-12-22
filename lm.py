@@ -110,7 +110,7 @@ class LSTMLayer(nn.Module):
                 outputs.append(h)
         else:
             # initial_state & initial_state_c is h, c
-            result = self.ListOfCells[str(self.cnt)](batch_x, self.hid, self.hid_c)
+            result = self.ListOfCells[str(self.cnt)](batch_x, initial_state, initial_state_c)
             self.cnt += 1
             if self.cnt == self.numHiddenUnits:
                 self.cnt = 0
