@@ -90,7 +90,7 @@ class LSTMLayer(nn.Module):
         self.hidden_size = hidden_size
         self.batch_size = batch_size
         self.numHiddenUnits = numHiddenUnits
-        # self.cnt = 0
+        self.cnt = 0
         self.ListOfCells = {}
         for i in range(self.numHiddenUnits):
             self.ListOfCells[str(i)] = LSTMCell(input_size, hidden_size, batch_size, device)
@@ -105,22 +105,22 @@ class LSTMLayer(nn.Module):
         # print(self.ListOfCells.device)
         # print(type(batch_x))
         # print(type(batch_x.dim))
-        # if len(batch_x.shape) == 3:
-        for timestep in range(batch_x.shape[0]):
-            result = self.ListOfCells[str(timestep)](batch_x[timestep], h, c)
+        if len(batch_x.shape) == 3:
+            for timestep in range(batch_x.shape[0]):
+                result = self.ListOfCells[str(timestep)](batch_x[timestep], h, c)
+                h = result[0]
+                c = result[1]
+                outputs.append(h)
+        else:
+            #initial_state & initial_state_c is h, c
+            result = self.ListOfCells[str(self.cnt)](batch_x, initial_state, initial_state_c)
+            self.cnt += 1
+            if self.cnt == self.numHiddenUnits:
+                self.cnt = 0
+            # outputs.append(h)
             h = result[0]
             c = result[1]
-            outputs.append(h)
-        # else:
-        #     initial_state & initial_state_c is h, c
-            # result = self.ListOfCells[str(self.cnt)](batch_x, initial_state, initial_state_c)
-            # self.cnt += 1
-            # if self.cnt == self.numHiddenUnits:
-            #     self.cnt = 0
-            outputs.append(h)
-            # h = result[0]
-            # c = result[1]
-            # return h, h, c
+            return h, h, c
 
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
         return torch.stack(outputs), h, c
@@ -184,17 +184,17 @@ class PTBLM(nn.Module):
         # print("PTBLM")
         # print(model_input.shape)
         ##.T ---- > .transpose(0, 1).contiguous() LAYER???
-        # if len(model_input.shape) == 2:
-        embs = self.embedding(model_input).transpose(0, 1).contiguous()
-        # else:
-        #     embs = self.embedding(model_input)
+        if len(model_input.shape) == 2:
+            embs = self.embedding(model_input).transpose(0, 1).contiguous()
+        else:
+            embs = self.embedding(model_input)
         # print('embed!')
         # print(embs.shape)
         outputs, hidden, hidden_c = self.lstm(embs, initial_state, initial_state_c)
-        # if len(model_input.shape) == 3:
-        logits = self.decoder(outputs).transpose(0, 1).contiguous()
-        # else:
-        #     logits = self.decoder(outputs)
+        if len(model_input.shape) == 3:
+            logits = self.decoder(outputs).transpose(0, 1).contiguous()
+        else:
+            logits = self.decoder(outputs)
         return logits, hidden, hidden_c
 
     def init_weights(self):
@@ -250,7 +250,7 @@ def get_small_config():
     config = {'lr': 0.1, 'lr_decay': 0.5,
               'max_grad_norm': 5, 'emb_size': 200,
               'hidden_size': 200, 'max_epoch': 5,
-              'max_max_epoch': 13, 'batch_size': 64,
+              'max_max_epoch': 1, 'batch_size': 64,
               'num_steps': 35, 'num_layers': 2,
               'vocab_size': 10000}
     return config
