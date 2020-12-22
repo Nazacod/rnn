@@ -108,7 +108,7 @@ class LSTMLayer(nn.Module):
                 h_loc, c_loc = self.lstmcell(batch_x[timestep], h_loc, c_loc)
                 # h = result[0]
                 # c = result[1]
-                outputs.append(h)
+                outputs.append(h_loc)
         else:
             # initial_state & initial_state_c is h, c
             result = self.lstmcell(batch_x, h, c)
@@ -120,9 +120,9 @@ class LSTMLayer(nn.Module):
             return result[0], result[0], result[1]
 
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
-        h_out = h_loc
-        c_out = c_loc
-        return torch.stack(outputs), h_out, c_out
+        # h_out = h_loc
+        # c_out = c_loc
+        return torch.stack(outputs), h_loc, c_loc
 
 
 # numHiddenUnits = seq_len(num_steps)
