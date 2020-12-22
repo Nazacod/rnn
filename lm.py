@@ -108,7 +108,7 @@ class LSTMLayer(nn.Module):
                 outputs.append(h)
         else:
             # initial_state & initial_state_c is h, c
-            result = self.lstmcell(batch_x, initial_state, initial_state_c)
+            result = self.lstmcell(batch_x, h, c)
             self.cnt += 1
             if self.cnt == self.numHiddenUnits:
                 self.cnt = 0
@@ -148,10 +148,10 @@ class LSTM(nn.Module):
         # print("LSTM")
         # print(self.firstLayer.ListOfCells[0].W_input.device)
         # if h is None:
-        out_first = self.firstLayer(batch_x, initial_state, initial_state_c, h, c)
+        out_first = self.firstLayer(batch_x, h, c)
         # else:
         #     out_first = self.firstLayer(batch_x, h, c)
-        out_second = self.secondLayer(out_first[0], initial_state, initial_state_c, h, c)
+        out_second = self.secondLayer(out_first[0], initial_state, initial_state_c)
         # return out_second[0], out_second[1]
         return out_second[0], out_second[1], out_second[2], out_first[1], out_first[2]
 
