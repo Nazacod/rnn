@@ -187,8 +187,10 @@ class PTBLM(nn.Module):
         # print('embed!')
         # print(embs.shape)
         outputs, hidden, hidden_c = self.lstm(embs, initial_state, initial_state_c)
-        logits = self.decoder(outputs).transpose(0, 1).contiguous()
-
+        if len(model_input.shape) == 3:
+            logits = self.decoder(outputs).transpose(0, 1).contiguous()
+        else:
+            logits = self.decoder(outputs)
         return logits, hidden, hidden_c
 
     def init_weights(self):
