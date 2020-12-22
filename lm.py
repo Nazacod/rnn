@@ -89,28 +89,26 @@ class LSTMLayer(nn.Module):
         self.batch_size = batch_size
         self.numHiddenUnits = numHiddenUnits
         self.cnt = 0
-        self.ListOfCells = {}
-        for i in range(self.numHiddenUnits):
-            self.ListOfCells[str(i)] = LSTMCell(input_size, hidden_size, batch_size, device)
+        self.lstmcell = LSTMCell(input_size, hidden_size, batch_size, device)
         self.to(device)
 
     def forward(self, batch_x, initial_state, initial_state_c):
         outputs = []
-        c = initial_state_c
         h = initial_state
+        c = initial_state_c
         # batch_x.shape = (seq_len, batch_size, emb_size)
         # print("LSTMLayer")
         # print(self.ListOfCells.device)
         # if batch_x.dim == 3:
         if len(batch_x.shape) == 3:
             for timestep in range(batch_x.shape[0]):
-                result = self.ListOfCells[str(timestep)](batch_x[timestep], h, c)
-                h = result[0]
-                c = result[1]
+                h, c = self.lstmcell(batch_x[timestep], h, c)
+                # h = result[0]
+                # c = result[1]
                 outputs.append(h)
         else:
             # initial_state & initial_state_c is h, c
-            result = self.ListOfCells[str(self.cnt)](batch_x, initial_state, initial_state_c)
+            result = self.lstmcell(batch_x, initial_state, initial_state_c)
             self.cnt += 1
             if self.cnt == self.numHiddenUnits:
                 self.cnt = 0
@@ -140,6 +138,7 @@ class LSTM(nn.Module):
         #     else:
         #         self.ListOfLayers.append(LSTMLayer(numHiddenUnits, hidden_size, hidden_size, batch_size))
 
+    # h2 hc2 h1 hc1
     def forward(self, batch_x, initial_state, initial_state_c, h=None, c=None):
         # for i in range(self.num_layers):
         #     if i == 0:
@@ -148,11 +147,11 @@ class LSTM(nn.Module):
         #         out = self.ListOfLayers[i](out[0], out[1], out[2])
         # print("LSTM")
         # print(self.firstLayer.ListOfCells[0].W_input.device)
-        if h is None:
-            out_first = self.firstLayer(batch_x, initial_state, initial_state_c)
-        else:
-            out_first = self.firstLayer(batch_x, h, c)
-        out_second = self.secondLayer(out_first[0], initial_state, initial_state_c)
+        # if h is None:
+        out_first = self.firstLayer(batch_x, initial_state, initial_state_c, h, c)
+        # else:
+        #     out_first = self.firstLayer(batch_x, h, c)
+        out_second = self.secondLayer(out_first[0], initial_state, initial_state_c, h, c)
         # return out_second[0], out_second[1]
         return out_second[0], out_second[1], out_second[2], out_first[1], out_first[2]
 
@@ -189,6 +188,7 @@ class PTBLM(nn.Module):
             embs = self.embedding(model_input)
         # print('embed!')
         # print(embs.shape)
+        # h2 hc2 h1 hc1
         outputs, hidden2, hidden_c2, hidden1, hidden_c1 = self.lstm(embs, initial_state,
                                                                     initial_state_c, hidden1, hidden_c1)
         # if len(model_input.shape) == 3:
@@ -226,13 +226,17 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
         # print(Y.device)
         if optimizer is not None:
             optimizer.zero_grad()
-        init = model.init_hidden(batch_size)
-        initial_state = init[0]
-        initial_state_c = init[1]
-        initial_state = initial_state.to(device)
-        initial_state_c = initial_state_c.to(device)
+        if step == 0:
+            init = model.init_hidden(batch_size)
+            hidden_state = init[0]
+            hidden_state_c = init[1]
+            hidden_state = hidden_state.to(device)
+            h1 = hidden_state
+            hidden_state_c = hidden_state_c.to(device)
+            h_c1 = hidden_state_c
 
-        logits, _, _, _, _ = model(X, initial_state, initial_state_c)
+        # logits, _, _, _, _ = model(X, initial_state, initial_state_c)
+        logits, hidden_state, hidden_state_c, h1, h_c1 = model(X, hidden_state, hidden_state_c, h1, h_c1)
 
         loss = loss_fn(logits.view((-1, model.vocab_size)), Y.view(-1))
         total_examples += loss.size(0)
@@ -251,7 +255,7 @@ def get_small_config():
     config = {'lr': 0.1, 'lr_decay': 0.5,
               'max_grad_norm': 5, 'emb_size': 200,
               'hidden_size': 200, 'max_epoch': 80,
-              'max_max_epoch': 100, 'batch_size': 64,
+              'max_max_epoch': 10, 'batch_size': 64,
               'num_steps': 35, 'num_layers': 2,
               'vocab_size': 10000}
     return config
@@ -354,6 +358,7 @@ def next_proba_gen(token_gen, params, hidden_state=None):
         X = X.to(device)
         params.eval()
         with torch.no_grad():
+            #h2 hc2 h1 hc1
             probs, hidden_state, hidden_state_c, h1, h_c1 = params(X, hidden_state, hidden_state_c, h1, h_c1)
             # print(probs.shape)
             if torch.cuda.is_available():
