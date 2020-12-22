@@ -332,13 +332,7 @@ def next_proba_gen(token_gen, params, hidden_state=None):
     for X in token_gen:
         if flag == 0:
             flag = 1
-            print(X)
-            print(type(X))
-            print(X.size)
-            print(type(X.size))
-            print(X.size[0])
-            print(type(X.size[0]))
-            init = params.init_hidden(batch_size=X.size[0])
+            init = params.init_hidden(batch_size=X.size)
             if hidden_state is None:
                 hidden_state = init[0]
             else:
