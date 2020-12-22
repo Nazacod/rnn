@@ -63,7 +63,7 @@ class LSTMCell(nn.Module):
         # print(inp.device)
         # print(self.W_input.device)
         # print(self.B_input.device)
-        print(inp.shape)
+        # print(inp.shape)
         i_all = torch.matmul(inp, self.W_input) + self.B_input
         h_all = torch.matmul(initial_state, self.W_hidden) + self.B_hidden
         tmp = i_all + h_all
@@ -354,5 +354,5 @@ def next_proba_gen(token_gen, params, hidden_state=None):
         with torch.no_grad():
             probs, hidden_state, hidden_state_c = params(X, hidden_state, hidden_state_c)
             print(probs.shape)
-        yield F.softmax(probs, dim=0), hidden_state
+        yield F.softmax(probs, dim=1), hidden_state
 
