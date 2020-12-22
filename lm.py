@@ -120,7 +120,7 @@ class LSTMLayer(nn.Module):
             return result[0], result[0], result[1]
 
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
-        return torch.stack(outputs), h, c
+        return torch.stack(outputs), h_loc, c_loc
 
 
 # numHiddenUnits = seq_len(num_steps)
@@ -258,7 +258,7 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
 
 
 def get_small_config():
-    config = {'lr': 0.5, 'lr_decay': 0.5,
+    config = {'lr': 0.1, 'lr_decay': 0.5,
               'max_grad_norm': 5, 'emb_size': 200,
               'hidden_size': 200, 'max_epoch': 80,
               'max_max_epoch': 10, 'batch_size': 64,
