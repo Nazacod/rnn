@@ -6,14 +6,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
-# ##
-# import os
-# import collections
-# from pathlib import Path
-# PTB_PATH = Path(__file__).with_name("PTB")
-# ##
-torch.manual_seed(42)
 
+
+torch.manual_seed(42)
 NGRAM = 2
 START_TOKEN = '<start>'
 EOS_TOKEN = '<eos>'
@@ -209,44 +204,7 @@ class PTBLM(nn.Module):
 def update_lr(optimizer, lr):
     for g in optimizer.param_groups:
         g['lr'] = lr
-####
-# def _read_words(filename):
-#     with open(filename, "r") as f:
-#         return f.read().replace("\n", "<eos>").split()
-#
-#
-# def _build_vocab(filename):
-#     data = _read_words(filename)
-#
-#     counter = collections.Counter(data)
-#     count_pairs = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
-#
-#     words, _ = list(zip(*count_pairs))
-#     word_to_id = dict(zip(words, range(len(words))))
-#     id_to_word = {v: k for k, v in word_to_id.items()}
-#
-#     return word_to_id, id_to_word
-#
-#
-# def _file_to_word_ids(filename, word_to_id):
-#     data = _read_words(filename)
-#     return [word_to_id[word] for word in data if word in word_to_id]
-#
-#
-# def load_dataset(data_path=None):
-#     train_path = os.path.join(data_path, "ptb.train.txt")
-#     dev_path = os.path.join(data_path, "ptb.valid.txt")
-#     test_path = os.path.join(data_path, "ptb.test.txt")
-#
-#     word_to_id, id_to_word = _build_vocab(train_path)
-#     train_data = _file_to_word_ids(train_path, word_to_id)
-#     dev_data = _file_to_word_ids(dev_path, word_to_id)
-#     test_data = _file_to_word_ids(test_path, word_to_id)
-#
-#     return train_data, dev_data, test_data, word_to_id, id_to_word
-#
 
-#####
 
 def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None, batch_size=1, num_steps=35):
     total_loss, total_examples = 0.0, 0
@@ -299,7 +257,7 @@ def get_small_config():
     config = {'lr': 0.1, 'lr_decay': 0.5,
               'max_grad_norm': 5, 'emb_size': 200,
               'hidden_size': 200, 'max_epoch': 5,
-              'max_max_epoch': 13, 'batch_size': 64,
+              'max_max_epoch': 1, 'batch_size': 64,
               'num_steps': 35, 'num_layers': 2,
               'vocab_size': 10000}
     return config
@@ -406,6 +364,7 @@ def next_proba_gen(token_gen, params, hidden_state=None):
         params.eval()
         # h2, h2_c, h1, h1_c
         with torch.no_grad():
+            print(X.shape)
             probs, h2, h2_c, h1, h1_c = params(X, h2, h2_c, h1, h1_c)
             # print(probs.shape)
             if torch.cuda.is_available():
@@ -413,40 +372,3 @@ def next_proba_gen(token_gen, params, hidden_state=None):
                 probs = probs.to("cpu")
             # hidden_state
         yield np.array(probs), hidden_state
-
-
-# ####
-# raw_data = load_dataset(PTB_PATH)
-# train_data, dev_data, test_data, word_to_id, id_to_word = raw_data
-# token_list = train_data
-#
-# config = get_small_config()
-# # print(len(token_list))
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# model = PTBLM(config["emb_size"], config["hidden_size"],
-#         config["vocab_size"], config["num_steps"],
-#         config["batch_size"], config['num_layers'], device)
-# # print(device)
-# model.to(device)
-# loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
-# optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
-# # model
-# plot_data = []
-# for i in range(config['max_max_epoch']):
-#     lr_decay = config['lr_decay'] ** max(i + 1 - config['max_epoch'], 0.0)
-#     decayed_lr = config['lr'] * lr_decay
-#
-#     model.train()
-#     train_perplexity = run_epoch(decayed_lr, model, token_list,
-#                                 word_to_id, loss_fn,
-#                                 optimizer=optimizer,
-#                                 device=device,
-#                                 batch_size=config["batch_size"],
-#                                 num_steps=config["num_steps"])
-#
-#     plot_data.append((i, train_perplexity, decayed_lr))
-#     print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
-#         f'Train Perplexity: {train_perplexity:.3f}. ')
-# epochs, ppl_train, lr = zip(*plot_data)
-# plt.plot(epochs, ppl_train, 'g', label='Perplexity')
-# plt.savefig('lr.png', dpi=1000, format='png')
