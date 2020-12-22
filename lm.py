@@ -49,10 +49,10 @@ class LSTMCell(nn.Module):
         self.hidden_size = hidden_size
 
         self.W_input = nn.Parameter(torch.Tensor(input_size, 4 * hidden_size))
-        self.B_input = nn.Parameter(torch.Tensor(batch_size, 4 * hidden_size))
+        self.B_input = nn.Parameter(torch.Tensor(4 * hidden_size))
 
         self.W_hidden = nn.Parameter(torch.Tensor(hidden_size, 4 * hidden_size))
-        self.B_hidden = nn.Parameter(torch.Tensor(batch_size, 4 * hidden_size))
+        self.B_hidden = nn.Parameter(torch.Tensor(4 * hidden_size))
 
         self.reset_parameters()
         self.to(device)
