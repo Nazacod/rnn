@@ -187,6 +187,8 @@ class PTBLM(nn.Module):
         # print('embed!')
         # print(embs.shape)
         outputs, hidden, _, _, _ = self.lstm(embs, initial_state, initial_state_c)
+        # if len(model_input.shape) == 3:
+        print(model_input.shape)
         logits = self.decoder(outputs).transpose(0, 1).contiguous()
 
         return logits, hidden
