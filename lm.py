@@ -120,7 +120,9 @@ class LSTMLayer(nn.Module):
             return result[0], result[0], result[1]
 
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
-        return torch.stack(outputs), h_loc, c_loc
+        h_out = h_loc
+        c_out = c_loc
+        return torch.stack(outputs), h_out, c_out
 
 
 # numHiddenUnits = seq_len(num_steps)
