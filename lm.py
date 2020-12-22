@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
+from torchviz import make_dot
 
 torch.manual_seed(42)
 
@@ -245,8 +246,11 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
 
         if optimizer is not None:
             update_lr(optimizer, lr)
-            loss.backward(retain_graph=True)
+            loss.backward()
             optimizer.step()
+            optimizer.zero_grad()
+            make_dot(loss)
+
 
     return np.exp(total_loss / total_examples)
 
