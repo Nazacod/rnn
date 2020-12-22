@@ -119,11 +119,6 @@ class Evaluator:
         X, X_tail = data[0:tail].reshape(bs, -1).T, data[tail:-1].reshape(1, -1).T 
         assert (np.concatenate([X[:, i] for i in range(X.shape[1])] + [X_tail[:, 0]]) == data[:-1]).all()
         Y, Y_tail = data[1:tail+1].reshape(bs, -1).T, data[tail+1:].reshape(1, -1).T
-        ##
-        print('predict')
-        print(X.shape)
-        print(X_tail.shape)
-        print('predict end')
 
         preds = []
         desc = 'Generate probability of the next word. Dataset: "{}", batch size: {}'.format(name, bs)
@@ -147,8 +142,6 @@ class Evaluator:
         return chain(zip(*r), zip(*rtail))  # convert to iterable over triples
 
     def append_prediction(self, preds, cur_id, next_id, softmax, unigram_probs, id_to_word, top_k, bs):
-        # print(softmax.shape)
-        # print((bs, len(id_to_word),))
         assert softmax.shape == (bs, len(id_to_word),)
         self.check_softmax(softmax)
 
