@@ -108,15 +108,15 @@ class LSTMLayer(nn.Module):
                 h = result[0]
                 c = result[1]
                 outputs.append(h)
-        # else:
-        #     result = self.ListOfCells[str(self.cnt)](batch_x, self.hid, self.hid_c)
-        #     self.cnt += 1
-        #     params = get_small_config()
-        #     if self.cnt == params['num_steps'] - 1:
-        #         self.cnt = 0
-        #     outputs.append(h)
-        #     h = result[0]
-        #     c = result[1]
+        else:
+            # initial_state & initial_state_c is h, c
+            result = self.ListOfCells[str(self.cnt)](batch_x, self.hid, self.hid_c)
+            self.cnt += 1
+            if self.cnt == self.numHiddenUnits:
+                self.cnt = 0
+            h = result[0]
+            c = result[1]
+            return h, h, c
 
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
         return torch.stack(outputs), h, c
@@ -149,7 +149,7 @@ class LSTM(nn.Module):
         # print("LSTM")
         # print(self.firstLayer.ListOfCells[0].W_input.device)
         out_first = self.firstLayer(batch_x, initial_state, initial_state_c)
-        out_second = self.secondLayer(out_first[0], out_first[1], out_first[2])
+        out_second = self.secondLayer(out_first[0], initial_state, initial_state_c)
         return out_second[0], out_second[1]
 
 
