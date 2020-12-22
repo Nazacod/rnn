@@ -184,7 +184,7 @@ class PTBLM(nn.Module):
         # print("PTBLM")
         # print(model_input.shape)
         ##.T ---- > .transpose(0, 1).contiguous() LAYER???
-        if len(model_input.shape) == 3:
+        if len(model_input.shape) == 2:
             embs = self.embedding(model_input).transpose(0, 1).contiguous()
         else:
             embs = self.embedding(model_input)
