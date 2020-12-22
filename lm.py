@@ -49,10 +49,12 @@ class LSTMCell(nn.Module):
         self.hidden_size = hidden_size
 
         self.W_input = nn.Parameter(torch.Tensor(input_size, 4 * hidden_size))
-        self.B_input = nn.Parameter(torch.Tensor(batch_size, 4 * hidden_size))
+        # self.B_input = nn.Parameter(torch.Tensor(batch_size, 4 * hidden_size))
+        self.B_input = nn.Parameter(torch.Tensor(4 * hidden_size))
 
         self.W_hidden = nn.Parameter(torch.Tensor(hidden_size, 4 * hidden_size))
-        self.B_hidden = nn.Parameter(torch.Tensor(batch_size, 4 * hidden_size))
+        # self.B_hidden = nn.Parameter(torch.Tensor(batch_size, 4 * hidden_size))
+        self.B_hidden = nn.Parameter(torch.Tensor(4 * hidden_size))
 
         self.reset_parameters()
         self.to(device)
@@ -149,7 +151,7 @@ class LSTM(nn.Module):
         # print(self.firstLayer.ListOfCells[0].W_input.device)
         out_first = self.firstLayer(batch_x, initial_state, initial_state_c)
         out_second = self.secondLayer(out_first[0], out_first[1], out_first[2])
-        return out_second[0], out_second[1]
+        return out_second[0], out_second[1], out_first[2]
 
 
 class PTBLM(nn.Module):
@@ -181,10 +183,10 @@ class PTBLM(nn.Module):
         embs = self.embedding(model_input).transpose(0, 1).contiguous()
         # print('embed!')
         # print(embs.shape)
-        outputs, hidden = self.lstm(embs, initial_state, initial_state_c)
+        outputs, hidden, hidden_c = self.lstm(embs, initial_state, initial_state_c)
         logits = self.decoder(outputs).transpose(0, 1).contiguous()
 
-        return logits, hidden
+        return logits, hidden, hidden_c
 
     def init_weights(self):
         self.embedding.weight.data.uniform_(-0.1, 0.1)
@@ -220,7 +222,7 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
         initial_state = initial_state.to(device)
         initial_state_c = initial_state_c.to(device)
 
-        logits, _ = model(X, initial_state, initial_state_c)
+        logits, _, _ = model(X, initial_state, initial_state_c)
 
         loss = loss_fn(logits.view((-1, model.vocab_size)), Y.view(-1))
         total_examples += loss.size(0)
