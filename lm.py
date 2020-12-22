@@ -345,7 +345,9 @@ def next_proba_gen(token_gen, params, hidden_state=None):
                 hidden_state = torch.tensor(hidden_state)
             hidden_state_c = init[1]
             hidden_state = hidden_state.to(device)
+            h1 = hidden_state
             hidden_state_c = hidden_state_c.to(device)
+            h_c1 = hidden_state_c
         # print(type(X))
         # print(X.shape)
         X = torch.tensor(X)
