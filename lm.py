@@ -148,7 +148,10 @@ class LSTM(nn.Module):
         #         out = self.ListOfLayers[i](out[0], out[1], out[2])
         # print("LSTM")
         # print(self.firstLayer.ListOfCells[0].W_input.device)
-        out_first = self.firstLayer(batch_x, initial_state, initial_state_c)
+        if h is None:
+            out_first = self.firstLayer(batch_x, initial_state, initial_state_c)
+        else:
+            out_first = self.firstLayer(batch_x, h, c)
         out_second = self.secondLayer(out_first[0], initial_state, initial_state_c)
         # return out_second[0], out_second[1]
         return out_second[0], out_second[1], out_second[2], out_first[1], out_first[2]
@@ -176,7 +179,7 @@ class PTBLM(nn.Module):
         # Weights initialization
         self.init_weights()
 
-    def forward(self, model_input, initial_state, initial_state_c):
+    def forward(self, model_input, initial_state, initial_state_c, hidden1=None, hidden_c1=None):
         #embs.shape = (seq_len, batch_size, emb_size)
         # print("PTBLM")
         # print(model_input.shape)
@@ -186,13 +189,14 @@ class PTBLM(nn.Module):
             embs = self.embedding(model_input)
         # print('embed!')
         # print(embs.shape)
-        outputs, hidden, hidden_c, _, _ = self.lstm(embs, initial_state, initial_state_c)
+        outputs, hidden2, hidden_c2, hidden1, hidden_c1 = self.lstm(embs, initial_state,
+                                                                    initial_state_c, hidden1, hidden_c1)
         # if len(model_input.shape) == 3:
         if len(outputs.shape) == 3:
             logits = self.decoder(outputs).transpose(0, 1).contiguous()
         else:
             logits = self.decoder(outputs)
-        return logits, hidden, hidden_c
+        return logits, hidden2, hidden_c2, hidden1, hidden_c1
 
     def init_weights(self):
         self.embedding.weight.data.uniform_(-0.1, 0.1)
@@ -348,7 +352,7 @@ def next_proba_gen(token_gen, params, hidden_state=None):
         X = X.to(device)
         params.eval()
         with torch.no_grad():
-            probs, hidden_state, hidden_state_c = params(X, hidden_state, hidden_state_c)
+            probs, hidden_state, hidden_state_c, h1, h_c1 = params(X, hidden_state, hidden_state_c, h1, h_c1)
             # print(probs.shape)
             if torch.cuda.is_available():
                 probs = F.softmax(probs, dim=1)
