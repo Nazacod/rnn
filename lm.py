@@ -247,7 +247,7 @@ def get_small_config():
     config = {'lr': 0.1, 'lr_decay': 0.5,
               'max_grad_norm': 5, 'emb_size': 200,
               'hidden_size': 200, 'max_epoch': 5,
-              'max_max_epoch': 13, 'batch_size': 64,
+              'max_max_epoch': 1, 'batch_size': 64,
               'num_steps': 35, 'num_layers': 2,
               'vocab_size': 10000}
     return config
@@ -327,25 +327,32 @@ def next_proba_gen(token_gen, params, hidden_state=None):
      For sampling from language model it will be used as the initial state for the following tokens.
     """
 
-    config = get_small_config()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    #X.shape(batch_size, )
+    # X.shape(batch_size, )
+
+    flag = 0
     for X in token_gen:
+        if flag == 0:
+            flag = 1
+            init = params.init_hidden(batch_size=X.size)
+            if hidden_state is None:
+                hidden_state = init[0]
+            else:
+                hidden_state = torch.tensor(hidden_state)
+            hidden_state_c = init[1]
+            hidden_state = hidden_state.to(device)
+            hidden_state_c = hidden_state_c.to(device)
         # print(type(X))
         # print(X.shape)
         X = torch.tensor(X)
         X = X.to(device)
         params.eval()
-        init = params.init_hidden(config['batch_size'])
-        if hidden_state is None:
-            initial_state = init[0]
-        else:
-            initial_state = hidden_state
-        initial_state_c = init[1]
-        initial_state = initial_state.to(device)
-        initial_state_c = initial_state_c.to(device)
         with torch.no_grad():
-            probs, hidden_state = params(X, initial_state, initial_state_c)
-
-        yield probs, hidden_state
+            probs, hidden_state, hidden_state_c = params(X, hidden_state, hidden_state_c)
+            # print(probs.shape)
+            if torch.cuda.is_available():
+                probs = F.softmax(probs, dim=1)
+                probs = probs.to("cpu")
+            # hidden_state
+        yield np.array(probs), hidden_state
 
