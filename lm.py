@@ -251,7 +251,7 @@ def get_small_config():
     config = {'lr': 0.1, 'lr_decay': 0.5,
               'max_grad_norm': 5, 'emb_size': 200,
               'hidden_size': 200, 'max_epoch': 5,
-              'max_max_epoch': 1, 'batch_size': 64,
+              'max_max_epoch': 13, 'batch_size': 64,
               'num_steps': 35, 'num_layers': 2,
               'vocab_size': 10000}
     return config
