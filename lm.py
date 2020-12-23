@@ -336,7 +336,7 @@ def next_proba_gen(token_gen, params, hidden_state=None):
         params.eval()
         # h2, h2_c, h1, h1_c
         with torch.no_grad():
-            print(X.shape)
+            # print(X.shape)
             probs, pack_hidden, pack_hidden_c = params(X, pack_hidden, pack_hidden_c)
             probs = probs.transpose(0, 1).contiguous()
             res = probs[0]
@@ -345,5 +345,5 @@ def next_proba_gen(token_gen, params, hidden_state=None):
                 res = F.softmax(res, dim=1)
                 res = res.to("cpu")
             # hidden_state
-            print(res.shape)
+            # print(res.shape)
         yield np.array(res), hidden_state
