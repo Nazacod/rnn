@@ -325,7 +325,7 @@ def next_proba_gen(token_gen, params, hidden_state=None):
         if flag == 0:
             flag = 1
             init = params.init_hidden(batch_size=X.size)
-            pack_hidden = torch.stack(init, init)
+            pack_hidden = torch.stack([init, init])
             pack_hidden_c = pack_hidden
             pack_hidden = pack_hidden.to(device)
             pack_hidden_c = pack_hidden_c.to(device)
