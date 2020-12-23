@@ -331,7 +331,7 @@ def next_proba_gen(token_gen, params, hidden_state=None):
             pack_hidden_c = pack_hidden_c.to(device)
         # print(type(X))
         # print(X.shape)
-        X = torch.tensor(X)
+        X = torch.tensor([X])
         X = X.to(device)
         params.eval()
         # h2, h2_c, h1, h1_c
