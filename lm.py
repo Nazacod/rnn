@@ -343,4 +343,5 @@ def next_proba_gen(token_gen, params, hidden_state=None):
                 probs = F.softmax(probs, dim=1)
                 probs = probs.to("cpu")
             # hidden_state
+            print(probs.shape)
         yield np.array(probs), hidden_state
