@@ -191,7 +191,7 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
     generator = batch_generator("PTB/ptb.train.txt", batch_size, num_steps)
     # print('Hello')
     for step, (X, Y) in enumerate(generator):
-        print(step)
+        # print(step)
         # print(X.shape)
         # print(X.device)
         X = X.to(device)
