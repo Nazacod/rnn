@@ -14,10 +14,10 @@ np.random.seed(42)
 
 config = {'lr': 0.01, 'lr_decay': 0.9,
           'max_grad_norm': 5, 'emb_size': 256,
-          'hidden_size': 512, 'max_epoch': 6,
+          'hidden_size': 256, 'max_epoch': 6,
           'max_max_epoch': 13, 'batch_size': 64,
           'num_steps': 35, 'vocab_size': 10000,
-          'dropout_rate': 0.8}
+          'dropout_rate': 1.0}
 
 
 def normalize(x):
