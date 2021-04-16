@@ -97,8 +97,9 @@ class LSTMLayer(nn.Module):
         for timestep in range(batch_x.shape[0]):
             hx = self.lstmcell(batch_x[timestep], hx)
             if self.training:
-                hx[0] *= mask_h
-                hx[1] *= mask_c
+                # hx[0] *= mask_h
+                # hx[1] *= mask_c
+                hx = (hx[0] * mask_h, hx[1] * mask_c)
             outputs.append(hx[0])
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
         return torch.stack(outputs), hx
