@@ -125,6 +125,8 @@ class LSTM(nn.Module):
         if list_hx is None:
             out_first = self.firstLayer(batch_x)
             if self.training:
+                print(out_first.shape, out_first.dtype)
+                print(mask_2.shape, mask_2.dtype)
                 out_first *= mask_2
             out_second = self.secondLayer(out_first[0])
             if self.training:
