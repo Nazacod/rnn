@@ -123,23 +123,23 @@ class LSTM(nn.Module):
             mask_3 = torch.rand(batch_x.shape[1], self.hidden_size, device=batch_x.device) < self.dropout_rate
             batch_x *= mask_1
         if list_hx is None:
-            out_first = self.firstLayer(batch_x)
+            out_first, hx_1 = self.firstLayer(batch_x)
             if self.training:
-                print(out_first.shape, out_first.dtype)
-                print(mask_2.shape, mask_2.dtype)
+                # print(out_first.shape, out_first.dtype)
+                # print(mask_2.shape, mask_2.dtype)
                 out_first *= mask_2
-            out_second = self.secondLayer(out_first[0])
+            out_second, hx_2 = self.secondLayer(out_first)
             if self.training:
                 out_second *= mask_3
         else:
-            out_first = self.firstLayer(batch_x, list_hx[0])
+            out_first, hx_1 = self.firstLayer(batch_x, list_hx[0])
             if self.training:
                 out_first *= mask_2
-            out_second = self.secondLayer(out_first[0], list_hx[1])
+            out_second, hx_2 = self.secondLayer(out_first, list_hx[1])
             if self.training:
                 out_second *= mask_3
 
-        return out_second[0], (out_first[1], out_second[1])
+        return out_second, (hx_1, hx_2)
 
 
 class PTBLM(nn.Module):
