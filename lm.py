@@ -17,7 +17,7 @@ config = {'lr': 0.01, 'lr_decay': 0.83,
           'hidden_size': 1024, 'max_epoch': 6,
           'max_max_epoch': 39, 'batch_size': 20,
           'num_steps': 35, 'vocab_size': 10000,
-          'dropout_rate': 0.5}
+          'dropout_rate': 1}
 
 # config = {'lr': 0.01, 'lr_decay': 0.9,
 #           'max_grad_norm': 5, 'emb_size': 256,
