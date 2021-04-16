@@ -12,7 +12,7 @@ EOS_TOKEN = '<eos>'
 device_glob = ""
 np.random.seed(42)
 
-config = {'lr': 1, 'lr_decay': 0.83,
+config = {'lr': 0.01, 'lr_decay': 0.83,
           'max_grad_norm': 5, 'emb_size': 650,
           'hidden_size': 650, 'max_epoch': 6,
           'max_max_epoch': 39, 'batch_size': 20,
