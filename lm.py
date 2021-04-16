@@ -188,9 +188,9 @@ def get_small_config():
     config = {'lr': 0.01, 'lr_decay': 0.9,
               'max_grad_norm': 5, 'emb_size': 256,
               'hidden_size': 256, 'max_epoch': 6,
-              'max_max_epoch': 13, 'batch_size': 64,
+              'max_max_epoch': 1, 'batch_size': 64,
               'num_steps': 35, 'num_layers': 2,
-              'vocab_size': 10001}
+              'vocab_size': 10000}
     # vocab_size = 10000 + <eos>
     return config
 
@@ -201,8 +201,8 @@ def train(token_list, word_to_id, id_to_word):
     :param token_list: a list of token ids
     :return: learnt parameters, or any object you like (it will be passed to the next_proba_gen function)
     """
-    word_to_id[EOS_TOKEN] = len(word_to_id)
-    id_to_word[len(word_to_id)-1] = EOS_TOKEN
+    # word_to_id[EOS_TOKEN] = len(word_to_id)
+    # id_to_word[len(word_to_id)-1] = EOS_TOKEN
     # for step, (x, y) in enumerate(batch_generator("PTB/ptb.train.txt", 2, 35, word_to_id)):
     #     print(step)
     #     print(x, end='\n\n')
