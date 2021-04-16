@@ -88,8 +88,8 @@ class LSTMLayer(nn.Module):
         # batch_x.shape = (seq_len, batch_size, emb_size)
         outputs = []
         if self.training:
-            mask_h = torch.rand(1, self.hidden_size, device=batch_x.device) < self.dropout_rate
-            mask_c = torch.rand(1, self.hidden_size, device=batch_x.device) < self.dropout_rate
+            mask_h = (torch.rand(1, self.hidden_size, device=batch_x.device) < self.dropout_rate) / self.dropout_rate
+            mask_c = (torch.rand(1, self.hidden_size, device=batch_x.device) < self.dropout_rate) / self.dropout_rate
         if hx is None:
             h_zeros = torch.zeros(batch_x.shape[1], self.hidden_size, device=batch_x.device, dtype=batch_x.dtype)
             c_zeros = torch.zeros(batch_x.shape[1], self.hidden_size, device=batch_x.device, dtype=batch_x.dtype)
@@ -118,9 +118,9 @@ class LSTM(nn.Module):
     def forward(self, batch_x, list_hx=None):
         # batch_x.shape = (seq_len, batch_size, emb_size)
         if self.training:
-            mask_1 = torch.rand(batch_x.shape[1], batch_x.shape[2], device=batch_x.device) < self.dropout_rate
-            mask_2 = torch.rand(batch_x.shape[1], self.hidden_size, device=batch_x.device) < self.dropout_rate
-            mask_3 = torch.rand(batch_x.shape[1], self.hidden_size, device=batch_x.device) < self.dropout_rate
+            mask_1 = (torch.rand(batch_x.shape[1], batch_x.shape[2], device=batch_x.device) < self.dropout_rate) / self.dropout_rate
+            mask_2 = (torch.rand(batch_x.shape[1], self.hidden_size, device=batch_x.device) < self.dropout_rate) / self.dropout_rate
+            mask_3 = (torch.rand(batch_x.shape[1], self.hidden_size, device=batch_x.device) < self.dropout_rate) / self.dropout_rate
             batch_x *= mask_1
         if list_hx is None:
             out_first, hx_1 = self.firstLayer(batch_x)
