@@ -201,6 +201,8 @@ def train(token_list, word_to_id, id_to_word):
     :param token_list: a list of token ids
     :return: learnt parameters, or any object you like (it will be passed to the next_proba_gen function)
     """
+    torch.manual_seed(42)
+    np.random.seed(42)
     # word_to_id[EOS_TOKEN] = len(word_to_id)
     # id_to_word[len(word_to_id)-1] = EOS_TOKEN
     # for step, (x, y) in enumerate(batch_generator("PTB/ptb.train.txt", 2, 35, word_to_id)):
