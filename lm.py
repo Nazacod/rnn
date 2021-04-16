@@ -12,10 +12,10 @@ EOS_TOKEN = '<eos>'
 device_glob = ""
 np.random.seed(42)
 
-config = {'lr': 0.1, 'lr_decay': 0.7,
+config = {'lr': 0.01, 'lr_decay': 0.9,
           'max_grad_norm': 5, 'emb_size': 256,
-          'hidden_size': 256, 'max_epoch': 3,
-          'max_max_epoch': 13, 'batch_size': 64,
+          'hidden_size': 256, 'max_epoch': 9,
+          'max_max_epoch': 39, 'batch_size': 64,
           'num_steps': 35, 'vocab_size': 10000,
           'dropout_rate': 0.8}
 
@@ -96,7 +96,7 @@ class LSTMLayer(nn.Module):
         outputs = []
         if self.training:
             mask_h = (torch.rand(1, self.hidden_size, device=batch_x.device) < self.dropout_rate)
-            mask_c = (torch.rand(1, self.hidden_size, device=batch_x.device) < self.dropout_rate)
+            # mask_c = (torch.rand(1, self.hidden_size, device=batch_x.device) < self.dropout_rate)
         if hx is None:
             h_zeros = torch.zeros(batch_x.shape[1], self.hidden_size, device=batch_x.device, dtype=batch_x.dtype)
             c_zeros = torch.zeros(batch_x.shape[1], self.hidden_size, device=batch_x.device, dtype=batch_x.dtype)
@@ -106,7 +106,7 @@ class LSTMLayer(nn.Module):
             if self.training:
                 # hx[0] *= mask_h
                 # hx[1] *= mask_c
-                hx = (hx[0] * mask_h, hx[1] * mask_c)
+                hx = (hx[0] * mask_h, hx[1])
             outputs.append(hx[0])
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
         return torch.stack(outputs), hx
