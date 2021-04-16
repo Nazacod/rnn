@@ -185,10 +185,10 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
 
 
 def get_small_config():
-    config = {'lr': 0.1, 'lr_decay': 0.5,
-              'max_grad_norm': 5, 'emb_size': 200,
-              'hidden_size': 200, 'max_epoch': 90,
-              'max_max_epoch': 100, 'batch_size': 64,
+    config = {'lr': 0.01, 'lr_decay': 0.9,
+              'max_grad_norm': 5, 'emb_size': 256,
+              'hidden_size': 256, 'max_epoch': 6,
+              'max_max_epoch': 13, 'batch_size': 64,
               'num_steps': 35, 'num_layers': 2,
               'vocab_size': 10001}
     # vocab_size = 10000 + <eos>
@@ -220,11 +220,13 @@ def train(token_list, word_to_id, id_to_word):
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
     # model
     # plot_data = []
+    model.train()
+
     for i in range(config['max_max_epoch']):
         lr_decay = config['lr_decay'] ** max(i + 1 - config['max_epoch'], 0.0)
         decayed_lr = config['lr'] * lr_decay
 
-        model.train()
+
         train_perplexity = run_epoch(decayed_lr, model, token_list,
                                      word_to_id, loss_fn,
                                      optimizer=optimizer,
