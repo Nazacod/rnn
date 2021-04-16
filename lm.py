@@ -265,15 +265,16 @@ def next_proba_gen(token_gen, params, hidden_state=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # X.shape(batch_size, )
 
-    flag = 0
+    # flag = 0
+    list_hx = hidden_state
     for X in token_gen:
-        if flag == 0:
-            flag = 1
-            init = params.init_hidden(batch_size=X.size)
-            pack_hidden = torch.stack([init, init])
-            pack_hidden_c = pack_hidden
-            pack_hidden = pack_hidden.to(device)
-            pack_hidden_c = pack_hidden_c.to(device)
+        # if flag == 0:
+        #     flag = 1
+        #     init = params.init_hidden(batch_size=X.size)
+        #     pack_hidden = torch.stack([init, init])
+        #     pack_hidden_c = pack_hidden
+        #     pack_hidden = pack_hidden.to(device)
+        #     pack_hidden_c = pack_hidden_c.to(device)
         # print(type(X))
         # print(X.shape)
         X = torch.tensor([X]).T
@@ -282,7 +283,7 @@ def next_proba_gen(token_gen, params, hidden_state=None):
         # h2, h2_c, h1, h1_c
         with torch.no_grad():
             # print(X.shape)
-            probs, pack_hidden, pack_hidden_c = params(X, pack_hidden, pack_hidden_c)
+            probs, list_hx = params(X, list_hx)
             probs = probs.transpose(0, 1).contiguous()
             res = probs[0]
             # print(probs.shape)
@@ -291,4 +292,4 @@ def next_proba_gen(token_gen, params, hidden_state=None):
                 res = res.to("cpu")
             # hidden_state
             # print(res.shape)
-        yield np.array(res), hidden_state
+        yield np.array(res), list_hx
