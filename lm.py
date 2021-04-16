@@ -16,7 +16,8 @@ config = {'lr': 0.01, 'lr_decay': 0.9,
           'max_grad_norm': 5, 'emb_size': 256,
           'hidden_size': 256, 'max_epoch': 6,
           'max_max_epoch': 13, 'batch_size': 64,
-          'num_steps': 35, 'vocab_size': 10000}
+          'num_steps': 35, 'vocab_size': 10000,
+          'dropout_rate': 0.2}
 
 
 def normalize(x):
@@ -74,22 +75,30 @@ class LSTMCell(nn.Module):
 
 # input.shape(batch_size, emb_size)
 class LSTMLayer(nn.Module):
-    def __init__(self, input_size, hidden_size):
+    def __init__(self, input_size, hidden_size, dropout_rate):
         super(LSTMLayer, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
+        self.dropout_rate = dropout_rate
         # self.cnt = 0
         # self.ListOfCells = {}
         self.lstmcell = LSTMCell(self.input_size, self.hidden_size)
 
     def forward(self, batch_x, hx=None):
+        # batch_x.shape = (seq_len, batch_size, emb_size)
         outputs = []
+        if self.training:
+            mask_h = torch.rand(1, self.hidden_size) < self.dropout_rate
+            mask_c = torch.rand(1, self.hidden_size) < self.dropout_rate
         if hx is None:
             h_zeros = torch.zeros(batch_x.shape[1], self.hidden_size, device=batch_x.device, dtype=batch_x.dtype)
             c_zeros = torch.zeros(batch_x.shape[1], self.hidden_size, device=batch_x.device, dtype=batch_x.dtype)
             hx = (h_zeros, c_zeros)
         for timestep in range(batch_x.shape[0]):
             hx = self.lstmcell(batch_x[timestep], hx)
+            if self.training:
+                hx[0] *= mask_h
+                hx[1] *= mask_c
             outputs.append(hx[0])
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
         return torch.stack(outputs), hx
@@ -97,20 +106,35 @@ class LSTMLayer(nn.Module):
 
 # numHiddenUnits = seq_len(num_steps)
 class LSTM(nn.Module):
-    def __init__(self, input_size, hidden_size):
+    def __init__(self, input_size, hidden_size, dropout_rate):
         super(LSTM, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
-        self.firstLayer = LSTMLayer(input_size, hidden_size)
-        self.secondLayer = LSTMLayer(hidden_size, hidden_size)
+        self.dropout_rate = dropout_rate
+        self.firstLayer = LSTMLayer(self.input_size, self.hidden_size, self.dropout_rate)
+        self.secondLayer = LSTMLayer(self.hidden_size, self.hidden_size, self.dropout_rate)
 
     def forward(self, batch_x, list_hx=None):
+        # batch_x.shape = (seq_len, batch_size, emb_size)
+        if self.training:
+            mask_1 = torch.rand(batch_x.shape[1], batch_x.shape[2]) < self.dropout_rate
+            mask_2 = torch.rand(batch_x.shape[1], self.hidden_size) < self.dropout_rate
+            mask_3 = torch.rand(batch_x.shape[1], self.hidden_size) < self.dropout_rate
+            batch_x *= mask_1
         if list_hx is None:
             out_first = self.firstLayer(batch_x)
+            if self.training:
+                out_first *= mask_2
             out_second = self.secondLayer(out_first[0])
+            if self.training:
+                out_second *= mask_3
         else:
             out_first = self.firstLayer(batch_x, list_hx[0])
+            if self.training:
+                out_first *= mask_2
             out_second = self.secondLayer(out_first[0], list_hx[1])
+            if self.training:
+                out_second *= mask_3
 
         return out_second[0], (out_first[1], out_second[1])
 
@@ -126,7 +150,7 @@ class PTBLM(nn.Module):
         self.embedding = nn.Embedding(num_embeddings=self.vocab_size,
                                       embedding_dim=self.emb_size)
         # Creating a recurrent cell. For multiple recurrent layers, you need to create the same number of recurrent cells.
-        self.lstm = LSTM(self.emb_size, self.hidden_size)
+        self.lstm = LSTM(self.emb_size, self.hidden_size, config['dropout_rate'])
         # Linear layer for projecting outputs from a recurrent layer into space with vocab_size dimension
         self.decoder = nn.Linear(in_features=self.hidden_size,
                                  out_features=self.vocab_size)
@@ -227,7 +251,6 @@ def train(token_list, word_to_id, id_to_word):
                                        device=device,
                                        batch_size=config["batch_size"],
                                        num_steps=config['num_steps'])
-
 
         # plot_data.append((i, train_perplexity, decayed_lr))
         print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
