@@ -224,7 +224,6 @@ def train(token_list, word_to_id, id_to_word):
             dev_perplexity = run_epoch(decayed_lr, model,
                                        word_to_id, loss_fn,
                                        path="PTB/ptb.valid.txt",
-                                       optimizer=optimizer,
                                        device=device,
                                        batch_size=config["batch_size"],
                                        num_steps=config['num_steps'])
@@ -234,7 +233,7 @@ def train(token_list, word_to_id, id_to_word):
         print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
               f'Train Perplexity: {train_perplexity:.3f}. '
               f'Dev Perplexity: {dev_perplexity:.3f}. ')
-        
+
     # epochs, ppl_train, lr = zip(*plot_data)
     # plt.plot(epochs, ppl_train, 'g', label='Perplexity')
     # plt.savefig('lr.png', dpi=1000, format='png')
