@@ -155,7 +155,7 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
     generator = batch_generator("PTB/ptb.train.txt", batch_size, num_steps, word_to_id)
     list_hx = None
     for step, (X, Y) in enumerate(generator):
-        print(step)
+        # print(step)
         X = X.to(device)
         Y = Y.to(device)
         if optimizer is not None:
@@ -214,7 +214,7 @@ def train(token_list, word_to_id, id_to_word):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = PTBLM(config["emb_size"], config["hidden_size"],
                   config["vocab_size"])
-    # print(device)
+    print(device)
     model.to(device)
     loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
