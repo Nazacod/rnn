@@ -1,19 +1,22 @@
 import numpy as np
-from collections import Counter
 import codecs
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
-
 torch.manual_seed(42)
-
 
 START_TOKEN = '<start>'
 EOS_TOKEN = '<eos>'
 device_glob = ""
 np.random.seed(42)
+
+config = {'lr': 0.01, 'lr_decay': 0.9,
+          'max_grad_norm': 5, 'emb_size': 256,
+          'hidden_size': 256, 'max_epoch': 6,
+          'max_max_epoch': 13, 'batch_size': 64,
+          'num_steps': 35, 'vocab_size': 10000}
 
 
 def normalize(x):
@@ -24,14 +27,14 @@ def batch_generator(data_path, batch_size, num_steps, word_to_id):
     with codecs.open(data_path, 'r', encoding='utf-8') as f:
         tokens = f.read().replace("\n", "<eos>").split()
 
-    x = tokens[:len(tokens)-(len(tokens) % (batch_size*num_steps))]
+    x = tokens[:len(tokens) - (len(tokens) % (batch_size * num_steps))]
     y = x[1:] + [EOS_TOKEN]
     x = torch.tensor([word_to_id[word] for word in x], dtype=torch.int64).reshape((batch_size, -1))
     y = torch.tensor([word_to_id[word] for word in y], dtype=torch.int64).reshape((batch_size, -1))
 
     for i in range(x.shape[1] // num_steps):
-        x_ = x[:, i*num_steps:(i+1)*num_steps]
-        y_ = y[:, i*num_steps:(i+1)*num_steps]
+        x_ = x[:, i * num_steps:(i + 1) * num_steps]
+        y_ = y[:, i * num_steps:(i + 1) * num_steps]
         yield x_, y_
 
 
@@ -42,8 +45,8 @@ class LSTMCell(nn.Module):
         self.input_size = input_size
         self.hidden_size = hidden_size
 
-        self.W_input = nn.Parameter(torch.Tensor(input_size, 4 * hidden_size))
-        self.B_input = nn.Parameter(torch.Tensor(4 * hidden_size))
+        self.W_input = nn.Parameter(torch.Tensor(self.input_size, 4 * self.hidden_size))
+        self.B_input = nn.Parameter(torch.Tensor(4 * self.hidden_size))
 
         self.W_hidden = nn.Parameter(torch.Tensor(hidden_size, 4 * hidden_size))
         self.B_hidden = nn.Parameter(torch.Tensor(4 * hidden_size))
@@ -51,10 +54,9 @@ class LSTMCell(nn.Module):
         self.reset_parameters()
 
     def forward(self, inp, hx):
-        #hx = (h_(t-1), c_(t-1))
+        # hx = (h_(t-1), c_(t-1))
         i_all = torch.matmul(inp, self.W_input) + self.B_input
         h_all = torch.matmul(hx[0], self.W_hidden) + self.B_hidden
-        # tmp = i_all + h_all
         list_tensors = torch.chunk(i_all + h_all, 4, dim=1)
         i_t = torch.sigmoid(list_tensors[0])
         f_t = torch.sigmoid(list_tensors[1])
@@ -133,7 +135,7 @@ class PTBLM(nn.Module):
         self.init_weights()
 
     def forward(self, model_input, list_hx=None):
-        #embs.shape = (seq_len, batch_size, emb_size)
+        # embs.shape = (seq_len, batch_size, emb_size)
         embs = self.embedding(model_input).transpose(0, 1).contiguous()
         outputs, list_hx_out = self.lstm(embs, list_hx)
         logits = self.decoder(outputs).transpose(0, 1).contiguous()
@@ -150,9 +152,10 @@ def update_lr(optimizer, lr):
         g['lr'] = lr
 
 
-def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None, batch_size=1, num_steps=35):
+def run_epoch(lr, model, word_to_id, loss_fn, path, optimizer=None, device=None, batch_size=1, num_steps=35):
     total_loss, total_examples = 0.0, 0
-    generator = batch_generator("PTB/ptb.train.txt", batch_size, num_steps, word_to_id)
+    # generator = batch_generator("PTB/ptb.train.txt", batch_size, num_steps, word_to_id)
+    generator = batch_generator(path, batch_size, num_steps, word_to_id)
     list_hx = None
     for step, (X, Y) in enumerate(generator):
         # print(step)
@@ -184,17 +187,6 @@ def run_epoch(lr, model, data, word_to_id, loss_fn, optimizer=None, device=None,
     return np.exp(total_loss / total_examples)
 
 
-def get_small_config():
-    config = {'lr': 0.01, 'lr_decay': 0.9,
-              'max_grad_norm': 5, 'emb_size': 256,
-              'hidden_size': 256, 'max_epoch': 6,
-              'max_max_epoch': 13, 'batch_size': 64,
-              'num_steps': 35, 'num_layers': 2,
-              'vocab_size': 10000}
-    # vocab_size = 10000 + <eos>
-    return config
-
-
 def train(token_list, word_to_id, id_to_word):
     """
     Trains n-gram language model on the given train set represented as a list of token ids.
@@ -203,16 +195,7 @@ def train(token_list, word_to_id, id_to_word):
     """
     torch.manual_seed(42)
     np.random.seed(42)
-    # word_to_id[EOS_TOKEN] = len(word_to_id)
-    # id_to_word[len(word_to_id)-1] = EOS_TOKEN
-    # for step, (x, y) in enumerate(batch_generator("PTB/ptb.train.txt", 2, 35, word_to_id)):
-    #     print(step)
-    #     print(x, end='\n\n')
-    #     print(y, end='\n\n')
-    # x, y = next(batch_generator("PTB/ptb.train.txt", 2, 35, word_to_id))
-    config = get_small_config()
 
-    # print(len(token_list))
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = PTBLM(config["emb_size"], config["hidden_size"],
                   config["vocab_size"])
@@ -222,23 +205,36 @@ def train(token_list, word_to_id, id_to_word):
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
     # model
     # plot_data = []
-    model.train()
 
     for i in range(config['max_max_epoch']):
         lr_decay = config['lr_decay'] ** max(i + 1 - config['max_epoch'], 0.0)
         decayed_lr = config['lr'] * lr_decay
 
-
-        train_perplexity = run_epoch(decayed_lr, model, token_list,
+        model.train()
+        train_perplexity = run_epoch(decayed_lr, model,
                                      word_to_id, loss_fn,
+                                     path="PTB/ptb.train.txt",
                                      optimizer=optimizer,
                                      device=device,
                                      batch_size=config["batch_size"],
                                      num_steps=config['num_steps'])
 
+        model.eval()
+        with torch.no_grad():
+            dev_perplexity = run_epoch(decayed_lr, model,
+                                       word_to_id, loss_fn,
+                                       path="PTB/ptb.valid.txt",
+                                       optimizer=optimizer,
+                                       device=device,
+                                       batch_size=config["batch_size"],
+                                       num_steps=config['num_steps'])
+
+
         # plot_data.append((i, train_perplexity, decayed_lr))
         print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
-              f'Train Perplexity: {train_perplexity:.3f}. ')
+              f'Train Perplexity: {train_perplexity:.3f}. '
+              f'Dev Perplexity: {dev_perplexity:.3f}. ')
+        
     # epochs, ppl_train, lr = zip(*plot_data)
     # plt.plot(epochs, ppl_train, 'g', label='Perplexity')
     # plt.savefig('lr.png', dpi=1000, format='png')
@@ -263,35 +259,18 @@ def next_proba_gen(token_gen, params, hidden_state=None):
      For sampling from language model it will be used as the initial state for the following tokens.
     """
 
-    # config = get_small_config()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    # X.shape(batch_size, )
-
-    # flag = 0
     list_hx = hidden_state
+    params.eval()
     for X in token_gen:
-        # if flag == 0:
-        #     flag = 1
-        #     init = params.init_hidden(batch_size=X.size)
-        #     pack_hidden = torch.stack([init, init])
-        #     pack_hidden_c = pack_hidden
-        #     pack_hidden = pack_hidden.to(device)
-        #     pack_hidden_c = pack_hidden_c.to(device)
-        # print(type(X))
-        # print(X.shape)
         X = torch.tensor([X]).T
         X = X.to(device)
-        params.eval()
-        # h2, h2_c, h1, h1_c
         with torch.no_grad():
             # print(X.shape)
             probs, list_hx = params(X, list_hx)
             probs = probs.transpose(0, 1).contiguous()
             res = probs[0]
-            # print(probs.shape)
             if torch.cuda.is_available():
                 res = F.softmax(res, dim=1)
                 res = res.to("cpu")
-            # hidden_state
-            # print(res.shape)
         yield np.array(res), list_hx
