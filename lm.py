@@ -263,8 +263,8 @@ def train(token_list, word_to_id, id_to_word):
     torch.manual_seed(42)
     np.random.seed(42)
 
-    param_drop = np.linspace(start=0.9, stop=0.5, num=10)
-    param_seqlen = [(config['num_steps'] + i*10) for i in range(0, 11)]
+    param_drop = np.linspace(start=0.9, stop=0.5, num=4)
+    param_seqlen = [(config['num_steps'] + i*10) for i in range(0, 4)]
     # param_drop = np.linspace(start=0.4, stop=0.9, num=1)
     # param_seqlen = [(config['num_steps'] + i * 10) for i in range(0, 1)]
     r = 0
@@ -311,6 +311,7 @@ def train(token_list, word_to_id, id_to_word):
                                                num_steps=config['num_steps'])
                 dev_min = min(dev_min, dev_perplexity)
             dev_perp[(param1, param2)] = dev_min
+            print(dev_min)
         # plot_data.append((i, train_perplexity, decayed_lr))
         # print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
         #       f'Train Perplexity: {train_perplexity:.3f}. '
