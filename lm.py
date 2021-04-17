@@ -269,7 +269,7 @@ def train(token_list, word_to_id, id_to_word):
               f'Train Perplexity: {train_perplexity:.3f}. '
               f'Dev Perplexity: {dev_perplexity:.3f}. ')
     with torch.no_grad():
-        strings = ancestral_sampling(model, word_to_id, id_to_word, 10, device)
+        strings = ancestral_sampling(model, word_to_id, id_to_word, 10, 20, device)
         for string in strings:
             print(string)
     # epochs, ppl_train, lr = zip(*plot_data)
@@ -317,32 +317,34 @@ def ancestral_sampling(model,
                       word_to_id,
                       id_to_word,
                       size,
+                      max_len,
                       device,
-                      start_word=None,
                       temperature=1.0):
 
-    unk_id = word_to_id['<unk>']
-    if start_word is None:
-        tokens = np.random.choice(len(id_to_word))
-        # tokens = idxs.reshape((batch_size, 1))
-    else:
-        # idxs = [word_to_id.get(word, unk_id) for word in start_text.split(' ')]
-        tokens = np.array(word_to_id.get(start_word, unk_id))
+    # unk_id = word_to_id['<unk>']
+    prev_idx = np.random.choice(len(id_to_word))
 
+    strings = []
     hidden = None
     for _ in range(size):
-        softmax, hidden = next(next_proba_gen(tokens, model, hidden_state=hidden))
-        softmax = softmax
-        if temperature != 1.0:
-            softmax = np.float_power(softmax, 1.0 / temperature)
-            softmax /= softmax.sum(axis=1)
+        string = []
+        model.eval()
+        with torch.no_grad():
+            hidden_state = None
+            for i in range(max_len):
+                X = torch.tensor([[prev_idx]], dtype=torch.int64, device=device)
+                logits, hidden_state = model(X, hidden_state)
+                softmax = F.softmax(logits, -1).cpu().numpy()[0, 0]
 
-        new_tokens = []
-        for sftmx in softmax:
-            idx = np.random.choice(list(range(len(sftmx))), p=sftmx)
-            new_tokens.append([idx])
+                if temperature != 1.0:
+                    softmax = np.float_power(softmax, 1.0 / temperature)
+                    softmax /= softmax.sum()
 
-        new_tokens = np.array(new_tokens)
-        tokens = np.concatenate([tokens, new_tokens], axis=1)
+                prev_idx = np.random.choice(list(range(len(softmax))), p=softmax)
 
-    return [' '.join([id_to_word[idx] for idx in t]) for t in tokens]
+                # selection of the most probable word
+                # prev_idx = np.argmax(softmax, axis=2)[0, 0]
+                string.append(id_to_word[int(prev_idx)])
+
+        strings.append(''.join(string).split(EOS_TOKEN)[0])
+    return strings
