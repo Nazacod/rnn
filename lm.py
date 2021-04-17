@@ -11,10 +11,10 @@ START_TOKEN = '<start>'
 EOS_TOKEN = '<eos>'
 np.random.seed(42)
 
-config = {'lr': 0.001, 'lr_decay': 0.9,
-          'max_grad_norm': 5, 'emb_size': 256,
-          'hidden_size': 256, 'max_epoch': 6,
-          'max_max_epoch': 13, 'batch_size': 64,
+config = {'lr': 1, 'lr_decay': 0.833,
+          'max_grad_norm': 5, 'emb_size': 650,
+          'hidden_size': 650, 'max_epoch': 6,
+          'max_max_epoch': 39, 'batch_size': 20,
           'num_steps': 35, 'vocab_size': 10000,
           'dropout_rate': 0.5}
 
@@ -103,8 +103,6 @@ class LSTMLayer(nn.Module):
         for timestep in range(batch_x.shape[0]):
             hx = self.lstmcell(batch_x[timestep], hx)
             if self.training:
-                # hx[0] *= mask_h
-                # hx[1] *= mask_c
                 hx = (hx[0] * mask_h, hx[1] * mask_c)
             outputs.append(hx[0])
         # torch.stack(outputs) = (seq_len, batch_size, hidden_size)
