@@ -13,8 +13,8 @@ np.random.seed(42)
 
 config = {'lr': 0.08, 'lr_decay': 0.9,
           'max_grad_norm': 5, 'emb_size': 512,
-          'hidden_size': 512, 'max_epoch': 6,
-          'max_max_epoch': 2, 'batch_size': 64,
+          'hidden_size': 512, 'max_epoch': 9,
+          'max_max_epoch': 30, 'batch_size': 64,
           'num_steps': 35, 'vocab_size': 10000,
           'dropout_rate': 1.0}
 
@@ -267,8 +267,12 @@ def train(token_list, word_to_id, id_to_word):
     param_seqlen = [(config['num_steps'] + i*10) for i in range(0, 11)]
     # param_drop = np.linspace(start=0.4, stop=0.9, num=1)
     # param_seqlen = [(config['num_steps'] + i * 10) for i in range(0, 1)]
+    r = 0
     for param1 in param_drop:
         for param2 in param_seqlen:
+            print(r)
+            r += 1
+
             config['dropout_rate'] = param1
             config['num_steps'] = param2
 
