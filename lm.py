@@ -11,10 +11,10 @@ START_TOKEN = '<start>'
 EOS_TOKEN = '<eos>'
 np.random.seed(42)
 
-config = {'lr': 0.01, 'lr_decay': 0.9,
-          'max_grad_norm': 5, 'emb_size': 256,
-          'hidden_size': 256, 'max_epoch': 6,
-          'max_max_epoch': 13, 'batch_size': 64,
+config = {'lr': 0.08, 'lr_decay': 0.9,
+          'max_grad_norm': 5, 'emb_size': 512,
+          'hidden_size': 512, 'max_epoch': 6,
+          'max_max_epoch': 2, 'batch_size': 64,
           'num_steps': 35, 'vocab_size': 10000,
           'dropout_rate': 1.0}
 
@@ -150,6 +150,7 @@ class LSTM(nn.Module):
 
         return out_second, (hx_1, hx_2)
 
+
 class Linear(nn.Module):
     def __init__(self, emb_size, vocab_size):
         super(Linear, self).__init__()
@@ -262,46 +263,60 @@ def train(token_list, word_to_id, id_to_word):
     torch.manual_seed(42)
     np.random.seed(42)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = PTBLM(config["emb_size"], config["hidden_size"],
-                  config["vocab_size"])
-    print(device)
-    model.to(device)
-    loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
-    optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
+    # param_drop = np.linspace(start=0.4, end=0.9, num=10)
+    # param_seqlen = [(config['num_steps'] + i*10) for i in range(1, 11)]
+    param_drop = np.linspace(start=0.4, end=0.9, num=1)
+    param_seqlen = [(config['num_steps'] + i * 10) for i in range(0, 1)]
+    for param1 in param_drop:
+        for param2 in param_seqlen:
+            config['dropout_rate'] = param1
+            config['num_steps'] = param2
+
+            dev_perp = {}
+            dev_min = 1000000000.0
+            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            model = PTBLM(config["emb_size"], config["hidden_size"],
+                          config["vocab_size"])
+            print(device)
+            model.to(device)
+            loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
+            optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
     # model
     # plot_data = []
 
-    for i in range(config['max_max_epoch']):
-        lr_decay = config['lr_decay'] ** max(i + 1 - config['max_epoch'], 0.0)
-        decayed_lr = config['lr'] * lr_decay
+            for i in range(config['max_max_epoch']):
+                lr_decay = config['lr_decay'] ** max(i + 1 - config['max_epoch'], 0.0)
+                decayed_lr = config['lr'] * lr_decay
 
-        model.train()
-        train_perplexity = run_epoch(decayed_lr, model,
-                                     word_to_id, loss_fn,
-                                     path="PTB/ptb.train.txt",
-                                     optimizer=optimizer,
-                                     device=device,
-                                     batch_size=config["batch_size"],
-                                     num_steps=config['num_steps'])
+                model.train()
+                train_perplexity = run_epoch(decayed_lr, model,
+                                             word_to_id, loss_fn,
+                                             path="PTB/ptb.train.txt",
+                                             optimizer=optimizer,
+                                             device=device,
+                                             batch_size=config["batch_size"],
+                                             num_steps=config['num_steps'])
 
-        model.eval()
-        with torch.no_grad():
-            dev_perplexity = run_epoch(decayed_lr, model,
-                                       word_to_id, loss_fn,
-                                       path="PTB/ptb.valid.txt",
-                                       device=device,
-                                       batch_size=config["batch_size"],
-                                       num_steps=config['num_steps'])
-
+                model.eval()
+                with torch.no_grad():
+                    dev_perplexity = run_epoch(decayed_lr, model,
+                                               word_to_id, loss_fn,
+                                               path="PTB/ptb.valid.txt",
+                                               device=device,
+                                               batch_size=config["batch_size"],
+                                               num_steps=config['num_steps'])
+                dev_min = min(dev_min, dev_perplexity)
+            dev_perp[(param1, param2)] = dev_min
         # plot_data.append((i, train_perplexity, decayed_lr))
-        print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
-              f'Train Perplexity: {train_perplexity:.3f}. '
-              f'Dev Perplexity: {dev_perplexity:.3f}. ')
-    with torch.no_grad():
-        strings = ancestral_sampling(model, word_to_id, id_to_word, 10, 20, device)
-        for string in strings:
-            print(string)
+        # print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
+        #       f'Train Perplexity: {train_perplexity:.3f}. '
+        #       f'Dev Perplexity: {dev_perplexity:.3f}. ')
+    for key, val in dev_perp.items():
+        print(key, ': ', val)
+    # with torch.no_grad():
+    #     strings = ancestral_sampling(model, word_to_id, id_to_word, 10, 20, device)
+    #     for string in strings:
+    #         print(string)
     # epochs, ppl_train, lr = zip(*plot_data)
     # plt.plot(epochs, ppl_train, 'g', label='Perplexity')
     # plt.savefig('lr.png', dpi=1000, format='png')
