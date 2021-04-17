@@ -13,10 +13,17 @@ np.random.seed(42)
 
 config = {'lr': 0.01, 'lr_decay': 0.9,
           'max_grad_norm': 5, 'emb_size': 256,
-          'hidden_size': 256, 'max_epoch': 9,
-          'max_max_epoch': 30, 'batch_size': 64,
-          'num_steps': 100, 'vocab_size': 10000,
-          'dropout_rate': 0.8}
+          'hidden_size': 256, 'max_epoch': 6,
+          'max_max_epoch': 13, 'batch_size': 64,
+          'num_steps': 35, 'vocab_size': 10000,
+          'dropout_rate': 1.0}
+
+# config = {'lr': 0.01, 'lr_decay': 0.9,
+#           'max_grad_norm': 5, 'emb_size': 256,
+#           'hidden_size': 256, 'max_epoch': 9,
+#           'max_max_epoch': 30, 'batch_size': 64,
+#           'num_steps': 100, 'vocab_size': 10000,
+#           'dropout_rate': 0.8}
 
 # config = {'lr': 0.01, 'lr_decay': 0.9,
 #           'max_grad_norm': 5, 'emb_size': 256,
@@ -86,8 +93,6 @@ class LSTMLayer(nn.Module):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.dropout_rate = dropout_rate
-        # self.cnt = 0
-        # self.ListOfCells = {}
         self.lstmcell = LSTMCell(self.input_size, self.hidden_size)
 
     def forward(self, batch_x, hx=None):
@@ -263,7 +268,10 @@ def train(token_list, word_to_id, id_to_word):
         print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
               f'Train Perplexity: {train_perplexity:.3f}. '
               f'Dev Perplexity: {dev_perplexity:.3f}. ')
-
+    with torch.no_grad():
+        strings = ancestral_sampling(model, word_to_id, id_to_word, 10, device)
+        for string in strings:
+            print(string)
     # epochs, ppl_train, lr = zip(*plot_data)
     # plt.plot(epochs, ppl_train, 'g', label='Perplexity')
     # plt.savefig('lr.png', dpi=1000, format='png')
@@ -303,3 +311,38 @@ def next_proba_gen(token_gen, params, hidden_state=None):
                 res = F.softmax(res, dim=1)
                 res = res.to("cpu")
         yield np.array(res), list_hx
+
+
+def ancestral_sampling(model,
+                      word_to_id,
+                      id_to_word,
+                      size,
+                      device,
+                      start_word=None,
+                      temperature=1.0):
+
+    unk_id = word_to_id['<unk>']
+    if start_word is None:
+        tokens = np.random.choice(len(id_to_word))
+        # tokens = idxs.reshape((batch_size, 1))
+    else:
+        # idxs = [word_to_id.get(word, unk_id) for word in start_text.split(' ')]
+        tokens = np.array(word_to_id.get(start_word, unk_id))
+
+    hidden = None
+    for _ in range(size):
+        softmax, hidden = next(next_proba_gen([tokens[:, -1]], model, hidden_state=hidden))
+        softmax = softmax
+        if temperature != 1.0:
+            softmax = np.float_power(softmax, 1.0 / temperature)
+            softmax /= softmax.sum(axis=1)
+
+        new_tokens = []
+        for sftmx in softmax:
+            idx = np.random.choice(list(range(len(sftmx))), p=sftmx)
+            new_tokens.append([idx])
+
+        new_tokens = np.array(new_tokens)
+        tokens = np.concatenate([tokens, new_tokens], axis=1)
+
+    return [' '.join([id_to_word[idx] for idx in t]) for t in tokens]
