@@ -13,10 +13,10 @@ np.random.seed(42)
 
 config = {'lr': 0.01, 'lr_decay': 0.9,
           'max_grad_norm': 5, 'emb_size': 256,
-          'hidden_size': 512, 'max_epoch': 10,
-          'max_max_epoch': 40, 'batch_size': 40,
-          'num_steps': 100, 'vocab_size': 10000,
-          'dropout_rate': 0.8}
+          'hidden_size': 256, 'max_epoch': 6,
+          'max_max_epoch': 13, 'batch_size': 64,
+          'num_steps': 35, 'vocab_size': 10000,
+          'dropout_rate': 1.0}
 
 # config = {'lr': 0.01, 'lr_decay': 0.9,
 #           'max_grad_norm': 5, 'emb_size': 256,
@@ -150,6 +150,34 @@ class LSTM(nn.Module):
 
         return out_second, (hx_1, hx_2)
 
+class Linear(nn.Module):
+    def __init__(self, emb_size, vocab_size):
+        super(Linear, self).__init__()
+        self.emb_size = emb_size
+        self.vocab_size = vocab_size
+
+        self.weights = nn.Parameter(torch.Tensor(self.vocab_size, self.emb_size))
+        self.B = nn.Parameter(torch.Tensor(self.vocab_size))
+
+        self.reset_parameters()
+
+    def forward(self, weights, inputs):
+        #w = (voc_size, emb_size)
+        #input = (seq_len, bs, emb_size)
+        outputs = []
+        self.weights = weights
+        for timestep in range(inputs.shape[0]):
+            out = torch.matmul(inputs[timestep], self.weights.T) + self.B
+            outputs.append(out)
+
+        return torch.stack(outputs)
+
+
+    def reset_parameters(self):
+        stdv = 1.0 / np.sqrt(self.emb_size)
+        for weight in self.parameters():
+            nn.init.uniform_(weight, -stdv, stdv)
+
 
 class PTBLM(nn.Module):
     def __init__(self, emb_size, hidden_size, vocab_size):
@@ -164,9 +192,10 @@ class PTBLM(nn.Module):
         # Creating a recurrent cell. For multiple recurrent layers, you need to create the same number of recurrent cells.
         self.lstm = LSTM(self.emb_size, self.hidden_size, config['dropout_rate'])
         # Linear layer for projecting outputs from a recurrent layer into space with vocab_size dimension
-        self.decoder = nn.Linear(in_features=self.hidden_size,
-                                 out_features=self.vocab_size)
-
+        # self.decoder = nn.Linear(in_features=self.hidden_size,
+        #                          out_features=self.vocab_size)
+        self.linear = Linear(self.emb_size, self.vocab_size)
+        # self.
         # Weights initialization
         self.init_weights()
 
@@ -174,13 +203,14 @@ class PTBLM(nn.Module):
         # embs.shape = (seq_len, batch_size, emb_size)
         embs = self.embedding(model_input).transpose(0, 1).contiguous()
         outputs, list_hx_out = self.lstm(embs, list_hx)
-        logits = self.decoder(outputs).transpose(0, 1).contiguous()
+        # logits = self.decoder(outputs).transpose(0, 1).contiguous()
+        logits = self.linear(self.embedding.weight.clone(), outputs).transpose(0, 1).contiguous()
 
         return logits, list_hx_out
 
     def init_weights(self):
         self.embedding.weight.data.uniform_(-0.1, 0.1)
-        self.decoder.weight.data.uniform_(-0.1, 0.1)
+        # self.decoder.weight.data.uniform_(-0.1, 0.1)
 
 
 def update_lr(optimizer, lr):
@@ -322,12 +352,11 @@ def ancestral_sampling(model,
                       temperature=1.0):
 
     # unk_id = word_to_id['<unk>']
-    prev_idx = np.random.choice(len(id_to_word))
 
     strings = []
-    hidden = None
     for _ in range(size):
-        string = []
+        prev_idx = np.random.choice(len(id_to_word))
+        string = [id_to_word[int(prev_idx)]]
         model.eval()
         with torch.no_grad():
             hidden_state = None
