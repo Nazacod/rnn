@@ -263,10 +263,10 @@ def train(token_list, word_to_id, id_to_word):
     torch.manual_seed(42)
     np.random.seed(42)
 
-    # param_drop = np.linspace(start=0.4, end=0.9, num=10)
-    # param_seqlen = [(config['num_steps'] + i*10) for i in range(1, 11)]
-    param_drop = np.linspace(start=0.4, stop=0.9, num=1)
-    param_seqlen = [(config['num_steps'] + i * 10) for i in range(0, 1)]
+    param_drop = np.linspace(start=0.9, stop=0.5, num=10)
+    param_seqlen = [(config['num_steps'] + i*10) for i in range(0, 11)]
+    # param_drop = np.linspace(start=0.4, stop=0.9, num=1)
+    # param_seqlen = [(config['num_steps'] + i * 10) for i in range(0, 1)]
     for param1 in param_drop:
         for param2 in param_seqlen:
             config['dropout_rate'] = param1
