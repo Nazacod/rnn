@@ -346,5 +346,5 @@ def ancestral_sampling(model,
                 # prev_idx = np.argmax(softmax, axis=2)[0, 0]
                 string.append(id_to_word[int(prev_idx)])
 
-        strings.append(''.join(string).split(EOS_TOKEN)[0])
+        strings.append(' '.join(string).split(EOS_TOKEN)[0])
     return strings
