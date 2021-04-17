@@ -156,7 +156,7 @@ class Linear(nn.Module):
         self.emb_size = emb_size
         self.vocab_size = vocab_size
 
-        self.weights = nn.Parameter(torch.Tensor(self.vocab_size, self.emb_size))
+        # self.weights = nn.Parameter(torch.Tensor(self.vocab_size, self.emb_size))
         self.B = nn.Parameter(torch.Tensor(self.vocab_size))
 
         self.reset_parameters()
@@ -165,9 +165,9 @@ class Linear(nn.Module):
         #w = (voc_size, emb_size)
         #input = (seq_len, bs, emb_size)
         outputs = []
-        self.weights = weights
+        # self.weights = weights
         for timestep in range(inputs.shape[0]):
-            out = torch.matmul(inputs[timestep], self.weights.T) + self.B
+            out = torch.matmul(inputs[timestep], weights.T) + self.B
             outputs.append(out)
 
         return torch.stack(outputs)
