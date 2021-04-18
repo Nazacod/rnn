@@ -11,10 +11,10 @@ START_TOKEN = '<start>'
 EOS_TOKEN = '<eos>'
 np.random.seed(42)
 
-config = {'lr': 0.0075, 'lr_decay': 0.92,
+config = {'lr': 0.0075, 'lr_decay': 0.9,
           'max_grad_norm': 5, 'emb_size': 400,
-          'hidden_size': 400, 'max_epoch': 9,
-          'max_max_epoch': 50, 'batch_size': 64,
+          'hidden_size': 400, 'max_epoch': 6,
+          'max_max_epoch': 15, 'batch_size': 64,
           'num_steps': 35, 'vocab_size': 10000,
           'dropout_rate': 0.9}
 
@@ -314,8 +314,8 @@ def train(token_list, word_to_id, id_to_word):
                 print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
                       f'Train Perplexity: {train_perplexity:.3f}. '
                       f'Dev Perplexity: {dev_perplexity:.3f}. ')
-            dev_perp[(param1, param2)] = dev_min
-            print('lr ', param1, '   ',dev_min)
+            #dev_perp[(param1, param2)] = dev_min
+            #print('lr ', param1, '   ',dev_min)
         # plot_data.append((i, train_perplexity, decayed_lr))
         # print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
         #       f'Train Perplexity: {train_perplexity:.3f}. '
