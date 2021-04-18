@@ -3,7 +3,7 @@ import codecs
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import matplotlib.pyplot as plt
+
 
 torch.manual_seed(42)
 
@@ -14,7 +14,7 @@ np.random.seed(42)
 config = {'lr': 0.0075, 'lr_decay': 0.9,
           'max_grad_norm': 5, 'emb_size': 256,
           'hidden_size': 256, 'max_epoch': 9,
-          'max_max_epoch': 25, 'batch_size': 64,
+          'max_max_epoch': 50, 'batch_size': 64,
           'num_steps': 35, 'vocab_size': 10000,
           'dropout_rate': 0.9}
 
@@ -271,8 +271,7 @@ def train(token_list, word_to_id, id_to_word):
     loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
     # model
-    trainp = []
-    devp = []
+    # plot_data = []
 
     for i in range(config['max_max_epoch']):
         lr_decay = config['lr_decay'] ** max(i + 1 - config['max_epoch'], 0.0)
@@ -286,7 +285,7 @@ def train(token_list, word_to_id, id_to_word):
                                      device=device,
                                      batch_size=config["batch_size"],
                                      num_steps=config['num_steps'])
-        trainp.append(train_perplexity)
+
         model.eval()
         with torch.no_grad():
             dev_perplexity = run_epoch(decayed_lr, model,
@@ -295,26 +294,18 @@ def train(token_list, word_to_id, id_to_word):
                                        device=device,
                                        batch_size=config["batch_size"],
                                        num_steps=config['num_steps'])
-        devp.append(dev_perplexity)
+
         # plot_data.append((i, train_perplexity, decayed_lr))
         print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
               f'Train Perplexity: {train_perplexity:.3f}. '
               f'Dev Perplexity: {dev_perplexity:.3f}. ')
     with torch.no_grad():
-        strings = ancestral_sampling(model, word_to_id, id_to_word, 10, 20, device, 0.01)
+        strings = ancestral_sampling(model, word_to_id, id_to_word, 10, 20, device)
         for string in strings:
             print(string)
-        print('----')    
-        strings = ancestral_sampling(model, word_to_id, id_to_word, 10, 20, device, 5)
-        for string in strings:
-            print(string)    
     # epochs, ppl_train, lr = zip(*plot_data)
     # plt.plot(epochs, ppl_train, 'g', label='Perplexity')
     # plt.savefig('lr.png', dpi=1000, format='png')
-    plt.plot(trainp, color='blue', label='label1')
-    plt.plot(devp, color='red', label='label2')
-    plt.legend()
-#    plt.savefig('zakhar_plot.jpeg')
 
     return model
 
