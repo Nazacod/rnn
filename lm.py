@@ -14,7 +14,7 @@ np.random.seed(42)
 config = {'lr': 0.0075, 'lr_decay': 0.9,
           'max_grad_norm': 5, 'emb_size': 256,
           'hidden_size': 256, 'max_epoch': 9,
-          'max_max_epoch': 30, 'batch_size': 64,
+          'max_max_epoch': 50, 'batch_size': 64,
           'num_steps': 35, 'vocab_size': 10000,
           'dropout_rate': 0.9}
 
