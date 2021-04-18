@@ -310,13 +310,16 @@ def train(token_list, word_to_id, id_to_word):
                                                device=device,
                                                batch_size=config["batch_size"],
                                                num_steps=config['num_steps'])
-                dev_min = min(dev_min, dev_perplexity)
+                # dev_min = min(dev_min, dev_perplexity)
+                print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
+                      f'Train Perplexity: {train_perplexity:.3f}. '
+                      f'Dev Perplexity: {dev_perplexity:.3f}. ')
             dev_perp[(param1, param2)] = dev_min
             print('lr ', param1, '   ',dev_min)
         # plot_data.append((i, train_perplexity, decayed_lr))
-        print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
-              f'Train Perplexity: {train_perplexity:.3f}. '
-              f'Dev Perplexity: {dev_perplexity:.3f}. ')
+        # print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
+        #       f'Train Perplexity: {train_perplexity:.3f}. '
+        #       f'Dev Perplexity: {dev_perplexity:.3f}. ')
     # for key, val in dev_perp.items():
     #     print(key, ': ', val)
     # with torch.no_grad():
