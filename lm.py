@@ -271,7 +271,8 @@ def train(token_list, word_to_id, id_to_word):
     loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
     # model
-    # plot_data = []
+    trainp = []
+    devp = []
 
     for i in range(config['max_max_epoch']):
         lr_decay = config['lr_decay'] ** max(i + 1 - config['max_epoch'], 0.0)
@@ -285,7 +286,7 @@ def train(token_list, word_to_id, id_to_word):
                                      device=device,
                                      batch_size=config["batch_size"],
                                      num_steps=config['num_steps'])
-
+        trainp.append(train_perplexity)
         model.eval()
         with torch.no_grad():
             dev_perplexity = run_epoch(decayed_lr, model,
@@ -294,7 +295,7 @@ def train(token_list, word_to_id, id_to_word):
                                        device=device,
                                        batch_size=config["batch_size"],
                                        num_steps=config['num_steps'])
-
+        devp.append(dev_perplexity)
         # plot_data.append((i, train_perplexity, decayed_lr))
         print(f'Epoch: {i + 1}. Learning rate: {decayed_lr:.3f}. '
               f'Train Perplexity: {train_perplexity:.3f}. '
@@ -306,6 +307,10 @@ def train(token_list, word_to_id, id_to_word):
     # epochs, ppl_train, lr = zip(*plot_data)
     # plt.plot(epochs, ppl_train, 'g', label='Perplexity')
     # plt.savefig('lr.png', dpi=1000, format='png')
+    plt.plot(trainp, color='blue', label='label1')
+    plt.plot(devp, color='red', label='label2')
+    plt.legend()
+    plt.savefig('zakhar_plot.jpeg')
 
     return model
 
